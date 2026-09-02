@@ -68,9 +68,9 @@ export function Discussion({
               <Link to={`/u/${m.author.id}`} className="mt-0.5 shrink-0">
                 <Avatar name={m.author.name} image={m.author.image} />
               </Link>
-              <div className="min-w-0 flex-1 rounded-lg border border-border bg-card/60 px-3.5 py-2.5">
+              <div className="min-w-0 flex-1 rounded-2xl border border-border bg-card px-4 py-3 shadow-card">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Link to={`/u/${m.author.id}`} className="font-medium text-foreground hover:underline">
+                  <Link to={`/u/${m.author.id}`} className="font-semibold text-foreground hover:underline">
                     {m.author.name}
                   </Link>
                   <span>{timeAgo(m.createdAt)}</span>

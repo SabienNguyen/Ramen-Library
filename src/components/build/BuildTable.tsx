@@ -26,7 +26,7 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
   }
 
   return (
-    <div className={cn('overflow-hidden rounded-xl border border-border bg-card/60', className)}>
+    <div className={cn('overflow-hidden rounded-2xl border border-border bg-card shadow-card', className)}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-muted/50 text-xs text-muted-foreground">
@@ -138,7 +138,7 @@ function Row({
       className={cn(
         'border-t border-border/60 border-l-2 border-l-transparent',
         flag === 'error' && 'border-l-destructive bg-destructive/5',
-        flag === 'warn' && 'border-l-accent bg-accent/5',
+        flag === 'warn' && 'border-l-[oklch(0.78_0.15_85)] bg-accent/20',
       )}
     >
       <td className="px-4 py-3 align-top">{label === '' ? null : <SlotLabel slot={slot} />}</td>

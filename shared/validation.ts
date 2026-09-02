@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { byId } from './ingredients'
-import { FORUM_CATEGORIES, MAX_TOPPINGS } from './bowl'
+import { COVER_TEMPLATES, FORUM_CATEGORIES, MAX_TOPPINGS } from './bowl'
 
 const idIn = (table: Record<string, unknown>) => z.string().refine((v) => v in table, 'unknown part')
 
@@ -22,10 +22,24 @@ export const bowlSchema = z.object({
     .max(MAX_TOPPINGS),
 })
 
-export const publishBuildSchema = z.object({
+const uploadUrl = z.string().regex(/^\/uploads\/[a-z0-9-]+(\.thumb)?\.webp$/, 'not an upload')
+const templateId = z.enum(COVER_TEMPLATES.map((t) => t.id) as [string, ...string[]])
+
+export const coverSchema = z.object({
+  imageUrl: uploadUrl.nullable().optional(),
+  thumbUrl: uploadUrl.nullable().optional(),
+  templateId: templateId.nullable().optional(),
+})
+
+export const publishBuildSchema = coverSchema.extend({
   name: z.string().trim().min(2).max(60),
   description: z.string().trim().max(2000).default(''),
   bowl: bowlSchema,
+})
+
+export const updateBuildSchema = coverSchema.extend({
+  name: z.string().trim().min(2).max(60).optional(),
+  description: z.string().trim().max(2000).optional(),
 })
 
 export const commentSchema = z.object({ body: z.string().trim().min(1).max(2000) })

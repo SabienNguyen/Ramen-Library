@@ -40,7 +40,7 @@ export function BuilderPage() {
       </div>
 
       <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
-        <section className="grain flex flex-col items-center rounded-2xl border border-border bg-card/40 p-3">
+        <section className="grain flex flex-col items-center rounded-2xl border border-border bg-card p-3 shadow-card">
           <BowlCanvas bowl={bowl} interactive className="max-w-[320px]" />
           <p className="mt-1 text-center font-mono text-[10px] tracking-widest text-muted-foreground uppercase">Preview · drag toppings · tap to remove</p>
         </section>

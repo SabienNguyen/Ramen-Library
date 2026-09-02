@@ -37,7 +37,7 @@ export function LibraryGrid({ onLoad }: { onLoad: () => void }) {
           return (
             <motion.div key={b.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ delay: i * 0.03 }}>
               <Card className="group overflow-hidden">
-                <div className="grain bg-gradient-to-b from-secondary/40 to-transparent p-4">
+                <div className="grain bg-[radial-gradient(ellipse_at_50%_35%,oklch(0.97_0.02_85),oklch(0.93_0.03_80))] p-4">
                   <BowlCanvas bowl={b} className="mx-auto max-w-56" />
                 </div>
                 <CardContent className="pt-4">

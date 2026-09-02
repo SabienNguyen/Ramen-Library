@@ -18,7 +18,7 @@ export function PageHeader({ title, jp, blurb, action, className }: { title: str
 
 export function Empty({ title, blurb, action }: { title: string; blurb?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-20 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border py-20 text-center">
       <h3 className="font-serif text-2xl">{title}</h3>
       {blurb && <p className="max-w-sm text-sm text-muted-foreground">{blurb}</p>}
       {action}
@@ -28,7 +28,7 @@ export function Empty({ title, blurb, action }: { title: string; blurb?: string;
 
 export function SignInPrompt({ what, next }: { what: string; next: string }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-3 text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent bg-accent/40 px-4 py-3 text-sm">
       <span className="text-muted-foreground">Sign in to {what}.</span>
       <div className="flex gap-2">
         <Link to={`/login?next=${encodeURIComponent(next)}`} className={buttonVariants({ size: 'sm', variant: 'outline' })}>

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link, useLoaderData, useNavigate, useRevalidator, useSearchParams } from 'react-router'
 import { MessageCircle, PenLine, Trash2 } from 'lucide-react'
 import { FORUM_CATEGORIES } from '../../shared/bowl'
+import { categoryBlurb, categoryLabel, categoryStyle } from '@/lib/forum'
+import { CategoryChip } from '@/components/social/CategoryChip'
 import { api, timeAgo, type ThreadDetail, type ThreadItem } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
@@ -14,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Discussion } from '@/components/social/Discussion'
 import { Empty, PageHeader, SignInPrompt } from '@/components/site/PageBits'
 
-const catLabel = (id: string) => FORUM_CATEGORIES.find((c) => c.id === id)?.label ?? id
+const catLabel = categoryLabel
 
 export function ForumPage() {
   const { items } = useLoaderData() as { items: ThreadItem[] }
@@ -29,34 +31,34 @@ export function ForumPage() {
         </Link>
         <CatLink to="/forum" active={!category} label="All threads" />
         {FORUM_CATEGORIES.map((c) => (
-          <CatLink key={c.id} to={`/forum?category=${c.id}`} active={category === c.id} label={c.label} blurb={c.blurb} />
+          <CatLink key={c.id} to={`/forum?category=${c.id}`} active={category === c.id} label={c.label} blurb={c.blurb} dot={categoryStyle[c.id]?.dot} />
         ))}
       </aside>
 
       <div>
-        <PageHeader title={category ? catLabel(category) : 'Forum'} jp="掲示板" blurb={category ? FORUM_CATEGORIES.find((c) => c.id === category)?.blurb : 'Recipes, technique, regional beef. Keep it about the bowl.'} className="mb-4" />
+        <PageHeader title={category ? catLabel(category) : 'Forum'} jp="掲示板" blurb={category ? categoryBlurb(category) : 'Recipes, technique, regional beef. Keep it about the bowl, keep it kind.'} className="mb-4" />
         {items.length ? (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card/60">
+          <ul className="grid gap-2">
             {items.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 px-4 py-3">
-                <Avatar name={t.author.name} image={t.author.image} className="size-8" />
+              <li key={t.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-card transition-colors hover:border-primary/40">
+                <Link to={`/u/${t.author.id}`} className="mt-0.5 shrink-0">
+                  <Avatar name={t.author.name} image={t.author.image} className="size-10 text-sm" />
+                </Link>
                 <div className="min-w-0 flex-1">
-                  <Link to={`/forum/${t.id}`} className="block truncate font-medium hover:underline">
+                  <Link to={`/forum/${t.id}`} className="block font-serif text-lg leading-snug hover:text-primary">
                     {t.title}
                   </Link>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {t.author.name} · {timeAgo(t.createdAt)} · {t.body}
-                  </p>
+                  <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{t.body}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <CategoryChip id={t.category} />
+                    <span className="font-semibold text-foreground">{t.author.name}</span>
+                    <span>started {timeAgo(t.createdAt)}</span>
+                    {t.replyCount > 0 && <span>· last reply {timeAgo(t.lastActivityAt)}</span>}
+                  </div>
                 </div>
-                {!category && (
-                  <Badge variant="secondary" className="hidden sm:inline-flex">
-                    {catLabel(t.category)}
-                  </Badge>
-                )}
-                <span className="flex w-12 items-center justify-end gap-1 font-mono text-xs text-muted-foreground tabular-nums">
+                <span className={cn('flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-mono text-xs tabular-nums', t.replyCount ? 'bg-secondary text-foreground' : 'text-muted-foreground')}>
                   <MessageCircle className="size-3.5" /> {t.replyCount}
                 </span>
-                <span className="hidden w-16 text-right text-xs text-muted-foreground sm:block">{timeAgo(t.lastActivityAt)}</span>
               </li>
             ))}
           </ul>
@@ -68,11 +70,14 @@ export function ForumPage() {
   )
 }
 
-function CatLink({ to, active, label, blurb }: { to: string; active: boolean; label: string; blurb?: string }) {
+function CatLink({ to, active, label, blurb, dot }: { to: string; active: boolean; label: string; blurb?: string; dot?: string }) {
   return (
-    <Link to={to} className={cn('rounded-md px-3 py-2 text-sm transition-colors hover:bg-secondary/60', active ? 'bg-secondary text-foreground' : 'text-muted-foreground')}>
-      <div className="font-medium">{label}</div>
-      {blurb && <div className="text-[11px] text-muted-foreground">{blurb}</div>}
+    <Link to={to} className={cn('flex items-start gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-secondary', active ? 'bg-card text-foreground shadow-card' : 'text-muted-foreground')}>
+      <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', dot ?? 'bg-foreground/40')} />
+      <span className="min-w-0">
+        <span className="block font-semibold">{label}</span>
+        {blurb && <span className="block text-[11px] text-muted-foreground">{blurb}</span>}
+      </span>
     </Link>
   )
 }
@@ -115,7 +120,7 @@ export function NewThreadPage() {
                     key={c.id}
                     type="button"
                     onClick={() => setCategory(c.id)}
-                    className={cn('rounded-full border px-3 py-1 text-xs font-medium transition-colors', category === c.id ? 'border-primary bg-primary/15 text-foreground' : 'border-border text-muted-foreground hover:text-foreground')}
+                    className={cn('rounded-full border px-3 py-1 text-xs font-semibold transition-colors', category === c.id ? cn('border-transparent', categoryStyle[c.id]?.chip) : 'border-border text-muted-foreground hover:text-foreground')}
                   >
                     {c.label}
                   </button>
@@ -156,17 +161,21 @@ export function ThreadPage() {
   return (
     <div className="mx-auto grid max-w-3xl gap-6">
       <div>
-        <Link to={`/forum?category=${thread.category}`} className="text-xs text-muted-foreground hover:text-foreground">
-          ← {catLabel(thread.category)}
-        </Link>
-        <h1 className="mt-1 font-serif text-4xl leading-tight">{thread.title}</h1>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Link to="/forum" className="hover:text-foreground">
+            Forum
+          </Link>
+          <span>/</span>
+          <CategoryChip id={thread.category} />
+        </div>
+        <h1 className="mt-2 font-serif text-4xl leading-tight">{thread.title}</h1>
       </div>
 
       <article className="flex gap-3">
         <Link to={`/u/${thread.author.id}`} className="mt-0.5 shrink-0">
           <Avatar name={thread.author.name} image={thread.author.image} className="size-10" />
         </Link>
-        <div className="min-w-0 flex-1 rounded-xl border border-primary/30 bg-card/80 px-4 py-3">
+        <div className="min-w-0 flex-1 rounded-2xl border border-primary/30 bg-card px-4 py-3 shadow-card">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Link to={`/u/${thread.author.id}`} className="font-medium text-foreground hover:underline">
               {thread.author.name}

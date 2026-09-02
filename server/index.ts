@@ -6,6 +6,8 @@ import { logger } from 'hono/logger'
 import { auth } from './auth'
 import { db } from './db/client'
 import { api, type Env } from './routes'
+import { UPLOAD_DIR } from './uploads'
+import path from 'node:path'
 
 // Apply migrations at boot so `pnpm dev` on a fresh clone just works.
 migrate(db, { migrationsFolder: new URL('./db/migrations', import.meta.url).pathname })
@@ -24,6 +26,13 @@ app.use('*', async (c, next) => {
 
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 app.route('/api', api)
+
+// Uploaded photos. Immutable names, so cache hard.
+app.use('/uploads/*', async (c, next) => {
+  await next()
+  if (c.res.ok) c.header('Cache-Control', 'public, max-age=31536000, immutable')
+})
+app.use('/uploads/*', serveStatic({ root: path.relative(process.cwd(), path.dirname(UPLOAD_DIR)) || '.' }))
 
 // Production: serve the built SPA and fall back to index.html for client routes.
 if (process.env.NODE_ENV === 'production') {

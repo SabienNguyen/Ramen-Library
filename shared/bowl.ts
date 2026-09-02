@@ -17,6 +17,16 @@ export type Bowl = {
 
 export const MAX_TOPPINGS = 12
 
+/** Illustrated cover templates for builds without a photo. 'live' = the procedural bowl render. */
+export const COVER_TEMPLATES = [
+  { id: 'live', label: 'Live render', blurb: 'Drawn from your exact parts.' },
+  { id: 'topdown', label: 'Top-down', blurb: 'The classic overhead shot.' },
+  { id: 'chopsticks', label: 'Noodle lift', blurb: 'Chopsticks, steam, sunburst.' },
+  { id: 'noren', label: 'Shop curtain', blurb: 'Noren with your bowl’s colour.' },
+  { id: 'waves', label: 'Seigaiha', blurb: 'Wave pattern, bowl badge.' },
+] as const
+export type CoverTemplateId = (typeof COVER_TEMPLATES)[number]['id']
+
 export const FORUM_CATEGORIES = [
   { id: 'general', label: 'General', blurb: 'Anything ramen.' },
   { id: 'recipes', label: 'Recipes', blurb: 'Tare ratios, broth timings, the stuff that works.' },

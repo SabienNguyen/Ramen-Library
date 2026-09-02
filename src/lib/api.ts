@@ -7,6 +7,9 @@ export type BuildItem = {
   name: string
   description: string
   bowl: Bowl
+  imageUrl: string | null
+  thumbUrl: string | null
+  templateId: string | null
   createdAt: string
   updatedAt: string
   author: Author
@@ -64,6 +67,13 @@ export async function api<T>(path: string, init?: RequestInit & { json?: unknown
     throw new ApiError(res.status, message)
   }
   return res.json() as Promise<T>
+}
+
+/** Upload a photo; returns the stored URLs. */
+export async function uploadPhoto(file: File): Promise<{ imageUrl: string; thumbUrl: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  return api('/uploads', { method: 'POST', body: form })
 }
 
 export function timeAgo(iso: string | Date) {

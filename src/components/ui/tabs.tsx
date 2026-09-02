@@ -11,13 +11,13 @@ function TabsList({ className, children, ...props }: React.ComponentProps<typeof
     <BaseTabs.List
       data-slot="tabs-list"
       className={cn(
-        'relative z-0 inline-flex h-9 w-fit items-center gap-1 rounded-lg bg-muted/70 p-1 text-muted-foreground',
+        'relative z-0 inline-flex h-10 w-fit items-center gap-1 rounded-full bg-muted p-1 text-muted-foreground',
         className,
       )}
       {...props}
     >
       {children}
-      <BaseTabs.Indicator className="absolute top-1/2 left-0 z-[-1] h-[calc(100%-0.5rem)] w-(--active-tab-width) -translate-y-1/2 translate-x-(--active-tab-left) rounded-md bg-background shadow-sm transition-[translate,width] duration-200 ease-out" />
+      <BaseTabs.Indicator className="absolute top-1/2 left-0 z-[-1] h-[calc(100%-0.5rem)] w-(--active-tab-width) -translate-y-1/2 translate-x-(--active-tab-left) rounded-full bg-card shadow-sm transition-[translate,width] duration-200 ease-out" />
     </BaseTabs.List>
   )
 }
@@ -27,7 +27,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof BaseTa
     <BaseTabs.Tab
       data-slot="tabs-trigger"
       className={cn(
-        "inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 data-[active]:text-foreground [&_svg:not([class*='size-'])]:size-4",
+        "inline-flex h-full items-center justify-center gap-1.5 rounded-full px-3.5 text-sm font-semibold whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 data-[active]:text-foreground [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}

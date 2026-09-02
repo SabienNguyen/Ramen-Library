@@ -6,6 +6,12 @@ Pick a broth, a tare, noodles, an aroma oil and toppings from a parts catalogue 
 
 Then publish it. Accounts, a community gallery with likes and comments, a forum, user profiles — the whole site, backed by a small API and a SQLite file.
 
+Every published build gets a cover: a photo you upload (resized and re-encoded to WebP on the server), or one of five illustrated templates that tint themselves to your broth for people who haven't shot the bowl yet.
+
+## Design
+
+"Warm paper." Cream ground, white rounded cards, chili red as the one loud colour, yolk and scallion as friendly secondaries. Nunito for text, Fraunces for headlines. Categories are colour-coded so the forum scans at a glance. Tokens live in `src/index.css`; a dark palette is kept under `.dark` for a future toggle.
+
 ## How it maps
 
 | PCPartPicker | Ramen Library |
@@ -38,6 +44,7 @@ Environment (all optional in dev):
 | Var | Default | Purpose |
 | --- | --- | --- |
 | `DATABASE_FILE` | `data/ramen.db` | SQLite path |
+| `UPLOAD_DIR` | `data/uploads` | Where photos are stored; served at `/uploads/*` |
 | `BETTER_AUTH_SECRET` | dev placeholder | **Set this in production.** Signs sessions |
 | `BETTER_AUTH_URL` | `http://localhost:5173` | Public origin of the site |
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | API bind |
@@ -74,7 +81,7 @@ src/
   pages/        Home, Builder, Drafts, Builds, Build, Forum/NewThread/Thread, Profile/Settings, Login/Signup
   components/
     ui/         button, card, badge, input, textarea, avatar, tabs, dialog, slider, tooltip
-    build/      BuildTable, PartPickerDialog, BuildSummary + CompatBar
+    build/      BuildTable, PartPickerDialog, BuildSummary + CompatBar, CoverArt (templates), CoverPicker (upload)
     bowl/       BowlCanvas (SVG preview + draggable toppings), ToppingGlyph
     social/     BuildCard, Discussion (comments and forum replies)
     site/       Layout (header/nav/footer), PageBits
@@ -99,6 +106,8 @@ All under `/api`. Writes need a session cookie (401 otherwise).
 | GET / DELETE | `/forum/threads/:id` | Thread with posts / delete own |
 | POST | `/forum/threads/:id/posts` · DELETE `/forum/posts/:id` | Replies |
 | GET | `/users/:id` | Profile, builds, threads |
+| PATCH | `/builds/:id` | Rename, edit description, change cover (owner) |
+| POST | `/uploads` | Multipart photo → `{ imageUrl, thumbUrl }` (WebP, max 8 MB) |
 | PATCH | `/me` | Update name and bio |
 | * | `/auth/*` | Better Auth (sign-up, sign-in, session, sign-out) |
 

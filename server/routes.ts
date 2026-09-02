@@ -7,7 +7,8 @@ import { HTTPException } from 'hono/http-exception'
 import type { auth } from './auth'
 import { db } from './db/client'
 import { buildComments, buildLikes, builds, posts, threads, user } from './db/schema'
-import { commentSchema, postSchema, profileSchema, publishBuildSchema, threadSchema } from '../shared/validation'
+import { commentSchema, postSchema, profileSchema, publishBuildSchema, threadSchema, updateBuildSchema } from '../shared/validation'
+import { saveUpload } from './uploads'
 
 type Session = typeof auth.$Infer.Session
 export type Env = { Variables: { user: Session['user'] | null; session: Session['session'] | null } }
@@ -101,8 +102,38 @@ api.post('/builds', authed, zValidator(publishBuildSchema), async (c) => {
   const u = requireUser(c)
   const body = c.req.valid('json')
   const id = uid()
-  await db.insert(builds).values({ id, userId: u.id, name: body.name, description: body.description, bowl: body.bowl })
+  await db.insert(builds).values({
+    id,
+    userId: u.id,
+    name: body.name,
+    description: body.description,
+    bowl: body.bowl,
+    imageUrl: body.imageUrl ?? null,
+    thumbUrl: body.thumbUrl ?? null,
+    templateId: body.templateId ?? null,
+  })
   return c.json({ id }, 201)
+})
+
+api.patch('/builds/:id', authed, zValidator(updateBuildSchema), async (c) => {
+  const u = requireUser(c)
+  const id = c.req.param('id')
+  const row = await db.query.builds.findFirst({ where: eq(builds.id, id), columns: { userId: true } })
+  if (!row) throw new HTTPException(404, { message: 'Build not found.' })
+  if (row.userId !== u.id) throw new HTTPException(403, { message: 'Not your build.' })
+  const body = c.req.valid('json')
+  await db.update(builds).set(body).where(eq(builds.id, id))
+  return c.json({ ok: true })
+})
+
+/* -------------------------------- uploads ------------------------------- */
+
+api.post('/uploads', authed, async (c) => {
+  const form = await c.req.formData()
+  const file = form.get('file')
+  if (!(file instanceof File)) throw new HTTPException(400, { message: 'No file.' })
+  const result = await saveUpload(file)
+  return c.json(result, 201)
 })
 
 api.get('/builds/:id', async (c) => {

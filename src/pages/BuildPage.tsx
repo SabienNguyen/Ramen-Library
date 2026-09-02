@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link, useLoaderData, useNavigate, useRevalidator } from 'react-router'
-import { AlertTriangle, CircleAlert, Flame, Hammer, Heart, Info, Link2, Trash2 } from 'lucide-react'
+import { AlertTriangle, Camera, CircleAlert, Flame, Hammer, Heart, Info, Link2, Trash2 } from 'lucide-react'
 import { byId, slotMeta, type PartBase, type Slot } from '@/data/ingredients'
-import { api, timeAgo, type BuildDetail } from '@/lib/api'
+import { api, timeAgo, uploadPhoto, type BuildDetail } from '@/lib/api'
+import { BuildCover } from '@/components/build/CoverArt'
+import { CoverPicker, defaultCover, type CoverChoice } from '@/components/build/CoverPicker'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { authClient } from '@/lib/auth-client'
 import { checkCompatibility } from '@/lib/compat'
 import { computeTotals, fmtMinutes, fmtPrice } from '@/lib/totals'
@@ -28,6 +31,28 @@ export function BuildPage() {
   const [like, setLike] = useState({ liked: build.likedByMe, count: build.likeCount })
   const [copied, setCopied] = useState(false)
   const mine = session?.user.id === build.userId
+  const [coverOpen, setCoverOpen] = useState(false)
+  const [cover, setCover] = useState<CoverChoice>(() => defaultCover({ imageUrl: build.imageUrl, thumbUrl: build.thumbUrl, templateId: (build.templateId as CoverChoice['templateId']) ?? 'live' }))
+  const [coverBusy, setCoverBusy] = useState(false)
+  const [coverError, setCoverError] = useState<string | null>(null)
+
+  async function saveCover(e: React.FormEvent) {
+    e.preventDefault()
+    setCoverBusy(true)
+    setCoverError(null)
+    try {
+      let imageUrl = cover.imageUrl
+      let thumbUrl = cover.thumbUrl
+      if (cover.file) ({ imageUrl, thumbUrl } = await uploadPhoto(cover.file))
+      await api(`/builds/${build.id}`, { method: 'PATCH', json: { imageUrl, thumbUrl, templateId: imageUrl ? null : cover.templateId } })
+      setCoverOpen(false)
+      revalidator.revalidate()
+    } catch (err) {
+      setCoverError(err instanceof Error ? err.message : 'Failed to save.')
+    } finally {
+      setCoverBusy(false)
+    }
+  }
 
   async function toggleLike() {
     if (!session) return navigate(`/login?next=/builds/${build.id}`)
@@ -62,9 +87,41 @@ export function BuildPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start">
       <aside className="grid gap-4 lg:sticky lg:top-20">
-        <section className="grain rounded-2xl border border-border bg-card/40 p-4">
-          <BowlCanvas bowl={build.bowl} />
+        <section className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <BuildCover build={build} variant="full" />
+          {mine && (
+            <Dialog open={coverOpen} onOpenChange={setCoverOpen}>
+              <DialogTrigger render={<Button size="sm" variant="outline" className="absolute right-3 bottom-3 shadow-card" />}>
+                <Camera /> Change cover
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Cover picture</DialogTitle>
+                  <DialogDescription>A photo of the real bowl, or one of the drawings.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={saveCover} className="grid max-h-[70vh] gap-4 overflow-y-auto pr-1">
+                  <CoverPicker bowl={build.bowl} name={build.name} value={cover} onChange={setCover} />
+                  {coverError && <p className="text-sm text-destructive">{coverError}</p>}
+                  <DialogFooter>
+                    <DialogClose render={<Button type="button" variant="ghost">Cancel</Button>} />
+                    <Button type="submit" disabled={coverBusy}>
+                      {coverBusy ? 'Saving…' : 'Save cover'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </section>
+        {(build.imageUrl || (build.templateId && build.templateId !== 'live')) && (
+          <section className="grain flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-card">
+            <BowlCanvas bowl={build.bowl} className="w-28 shrink-0" />
+            <div className="text-xs text-muted-foreground">
+              <div className="font-semibold text-foreground">Parts render</div>
+              Drawn from the exact parts list, so you can compare it to the photo.
+            </div>
+          </section>
+        )}
         <Card>
           <CardContent className="grid grid-cols-2 gap-3 p-4">
             <Stat label="Price" value={fmtPrice(totals.price)} />
@@ -180,11 +237,11 @@ export function BuildPage() {
                   className={cn(
                     'flex gap-2 rounded-md border px-2.5 py-2 text-xs leading-snug',
                     i.level === 'error' && 'border-destructive/40 bg-destructive/10',
-                    i.level === 'warn' && 'border-accent/30 bg-accent/10',
+                    i.level === 'warn' && 'border-accent bg-accent/30',
                     i.level === 'note' && 'border-border bg-secondary/40 text-muted-foreground',
                   )}
                 >
-                  {i.level === 'error' ? <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : i.level === 'warn' ? <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <Info className="mt-0.5 size-3.5 shrink-0" />}
+                  {i.level === 'error' ? <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : i.level === 'warn' ? <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-accent-foreground" /> : <Info className="mt-0.5 size-3.5 shrink-0" />}
                   <span>{i.message}</span>
                 </li>
               ))}

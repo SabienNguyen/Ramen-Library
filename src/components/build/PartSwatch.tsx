@@ -24,7 +24,7 @@ export function PartSwatch({ slot, part, className }: { slot: Slot; part: PartBa
         ? { color: (part as Tare).tint, deep: (part as Tare).tint, opacity: 0.35 + (part as Tare).tintStrength }
         : { color: (part as AromaOil).color, deep: (part as AromaOil).color, opacity: 0.9 }
   return (
-    <div className={cn('relative overflow-hidden rounded-full bg-[#3a2a1d] ring-1 ring-white/10', className)}>
+    <div className={cn('relative overflow-hidden rounded-full bg-[#c9b596] ring-1 ring-black/10', className)}>
       <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 35% 30%, ${color}, ${deep})`, opacity }} />
     </div>
   )

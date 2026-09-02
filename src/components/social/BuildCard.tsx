@@ -6,7 +6,7 @@ import { computeTotals, fmtPrice } from '@/lib/totals'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
-import { BowlCanvas } from '@/components/bowl/BowlCanvas'
+import { BuildCover } from '@/components/build/CoverArt'
 
 export function BuildCard({ build, className }: { build: BuildItem; className?: string }) {
   const totals = computeTotals(build.bowl)
@@ -14,10 +14,10 @@ export function BuildCard({ build, className }: { build: BuildItem; className?: 
     .filter(Boolean)
     .join(' · ')
   return (
-    <Card className={cn('group overflow-hidden transition-colors hover:border-primary/40', className)}>
+    <Card className={cn('group overflow-hidden transition-[border-color,box-shadow] hover:border-primary/40 hover:shadow-[0_12px_32px_-16px_oklch(0.3_0.03_50/35%)]', className)}>
       <Link to={`/builds/${build.id}`} className="block">
-        <div className="grain bg-gradient-to-b from-secondary/40 to-transparent p-3">
-          <BowlCanvas bowl={build.bowl} className="mx-auto max-w-44 transition-transform duration-300 group-hover:scale-[1.03]" />
+        <div className="overflow-hidden">
+          <BuildCover build={build} className="transition-transform duration-300 group-hover:scale-[1.03]" />
         </div>
         <div className="px-4 pt-3 pb-2">
           <h3 className="truncate font-serif text-xl leading-tight">{build.name}</h3>

@@ -32,8 +32,8 @@ export function BowlCanvas({ bowl, interactive = false, className }: Props) {
   const oil = bowl.oilId ? byId.oil[bowl.oilId] : null
   const totals = computeTotals(bowl)
 
-  const base = broth?.color ?? '#3a2a1d'
-  const baseDeep = broth?.deep ?? '#2a1e14'
+  const base = broth?.color ?? '#d6c6a8'
+  const baseDeep = broth?.deep ?? '#b8a381'
   const surface = tare ? mix(base, tare.tint, tare.tintStrength) : base
   const deep = tare ? mix(baseDeep, tare.tint, tare.tintStrength * 0.8) : baseDeep
   const spiceTint = totals.spice > 0 ? mix(surface, '#c2321d', 0.12 * totals.spice) : surface
@@ -66,12 +66,12 @@ export function BowlCanvas({ bowl, interactive = false, className }: Props) {
         </defs>
 
         {/* table shadow */}
-        <ellipse cx={CX} cy={352} rx={150} ry={16} fill="black" opacity="0.35" filter={`url(#${gradientId}-blur)`} />
+        <ellipse cx={CX} cy={352} rx={150} ry={16} fill="#6b5a48" opacity="0.22" filter={`url(#${gradientId}-blur)`} />
 
         {/* ceramic body */}
         <path
           d={`M ${CX - 172} ${CY + 6} Q ${CX - 150} ${CY + 130} ${CX - 60} ${CY + 132} L ${CX + 60} ${CY + 132} Q ${CX + 150} ${CY + 130} ${CX + 172} ${CY + 6} Z`}
-          fill="#2b2622"
+          fill="#f2ece1"
         />
         <path
           d={`M ${CX - 172} ${CY + 6} Q ${CX - 150} ${CY + 130} ${CX - 60} ${CY + 132} L ${CX + 60} ${CY + 132} Q ${CX + 150} ${CY + 130} ${CX + 172} ${CY + 6} Z`}
@@ -79,21 +79,21 @@ export function BowlCanvas({ bowl, interactive = false, className }: Props) {
           opacity="0.5"
         />
         <linearGradient id="ceramic" x1="0" x2="1">
-          <stop offset="0" stopColor="#4a423a" />
-          <stop offset="0.5" stopColor="#1d1916" />
-          <stop offset="1" stopColor="#3a332d" />
+          <stop offset="0" stopColor="#cfc4b3" />
+          <stop offset="0.5" stopColor="#fbf8f2" />
+          <stop offset="1" stopColor="#d8cdbb" />
         </linearGradient>
         {/* foot */}
-        <rect x={CX - 60} y={CY + 130} width="120" height="10" rx="3" fill="#1c1815" />
+        <rect x={CX - 60} y={CY + 130} width="120" height="10" rx="3" fill="#cdbfa9" />
         {/* rim */}
-        <ellipse cx={CX} cy={CY} rx={172} ry={106} fill="#3a332d" />
+        <ellipse cx={CX} cy={CY} rx={172} ry={106} fill="#f7f2e8" />
         <ellipse cx={CX} cy={CY} rx={172} ry={106} fill="none" stroke="#c8442a" strokeWidth="6" opacity="0.9" />
-        <ellipse cx={CX} cy={CY} rx={162} ry={98} fill="#211d1a" />
+        <ellipse cx={CX} cy={CY} rx={162} ry={98} fill="#e3d9c8" />
         {/* dark interior so translucent broths read as deep */}
-        <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="#3a2a1d" />
+        <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="#c9b596" />
 
         {/* broth */}
-        <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={`url(#${gradientId})`} opacity={broth ? broth.opacity : 0.35} />
+        <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={`url(#${gradientId})`} opacity={broth ? broth.opacity : 0.5} />
 
         {/* noodles */}
         <g clipPath={`url(#${gradientId}-clip)`}>
@@ -240,11 +240,11 @@ function Steam() {
           key={i}
           d={`M ${w.x} 120 c -14 -18 14 -30 0 -50 c -12 -16 10 -26 0 -44`}
           fill="none"
-          stroke="white"
+          stroke="#a8977f"
           strokeWidth="6"
           strokeLinecap="round"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: [0, 0.22, 0], y: [20, -30] }}
+          animate={{ opacity: [0, 0.35, 0], y: [20, -30] }}
           transition={{ duration: 3.2, delay: w.d, repeat: Infinity, ease: 'easeOut' }}
           style={{ filter: 'blur(3px)' }}
         />

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertTriangle, BookmarkPlus, Check, CircleAlert, Eraser, Flame, Info, Link2, Shuffle, Upload } from 'lucide-react'
-import { api } from '@/lib/api'
+import { api, uploadPhoto } from '@/lib/api'
+import { CoverPicker, defaultCover, type CoverChoice } from './CoverPicker'
 import { authClient } from '@/lib/auth-client'
 import type { Issue } from '@/lib/compat'
 import { bowlName } from '@/lib/naming'
@@ -33,9 +34,9 @@ export function CompatBar({ issues, className }: { issues: Issue[]; className?: 
     <div
       className={cn(
         'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm',
-        tone === 'ok' && 'border-scallion/40 bg-scallion/10 text-scallion',
-        tone === 'warn' && 'border-accent/40 bg-accent/10 text-accent',
-        tone === 'error' && 'border-destructive/50 bg-destructive/10 text-[oklch(0.8_0.14_25)]',
+        tone === 'ok' && 'border-scallion/30 bg-scallion/10 text-scallion',
+        tone === 'warn' && 'border-accent bg-accent/40 text-accent-foreground',
+        tone === 'error' && 'border-destructive/40 bg-destructive/10 text-destructive',
         className,
       )}
       role="status"
@@ -62,13 +63,20 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
   const [pubDesc, setPubDesc] = useState('')
   const [pubBusy, setPubBusy] = useState(false)
   const [pubError, setPubError] = useState<string | null>(null)
+  const [cover, setCover] = useState<CoverChoice>(() => defaultCover())
 
   async function onPublish(e: React.FormEvent) {
     e.preventDefault()
     setPubBusy(true)
     setPubError(null)
     try {
-      const { id } = await api<{ id: string }>('/builds', { method: 'POST', json: { name: pubName || suggested, description: pubDesc, bowl } })
+      let imageUrl = cover.imageUrl
+      let thumbUrl = cover.thumbUrl
+      if (cover.file) ({ imageUrl, thumbUrl } = await uploadPhoto(cover.file))
+      const { id } = await api<{ id: string }>('/builds', {
+        method: 'POST',
+        json: { name: pubName || suggested, description: pubDesc, bowl, imageUrl, thumbUrl, templateId: imageUrl ? null : cover.templateId },
+      })
       setPubOpen(false)
       navigate(`/builds/${id}`)
     } catch (err) {
@@ -101,7 +109,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
   }
 
   const bodyPct = totals.bodyCapacity ? Math.min(100, (totals.bodyLoad / totals.bodyCapacity) * 100) : 0
-  const bodyTone = totals.bodyLoad > totals.bodyCapacity ? 'bg-destructive' : bodyPct > 85 ? 'bg-accent' : 'bg-scallion'
+  const bodyTone = totals.bodyLoad > totals.bodyCapacity ? 'bg-destructive' : bodyPct > 85 ? 'bg-[oklch(0.78_0.15_85)]' : 'bg-scallion'
 
   return (
     <Card className={cn('flex flex-col', className)}>
@@ -158,11 +166,11 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
                   className={cn(
                     'flex gap-2 rounded-md border px-2.5 py-2 text-xs leading-snug',
                     i.level === 'error' && 'border-destructive/40 bg-destructive/10',
-                    i.level === 'warn' && 'border-accent/30 bg-accent/10',
+                    i.level === 'warn' && 'border-accent bg-accent/30',
                     i.level === 'note' && 'border-border bg-secondary/40 text-muted-foreground',
                   )}
                 >
-                  {i.level === 'error' ? <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : i.level === 'warn' ? <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <Info className="mt-0.5 size-3.5 shrink-0" />}
+                  {i.level === 'error' ? <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : i.level === 'warn' ? <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-accent-foreground" /> : <Info className="mt-0.5 size-3.5 shrink-0" />}
                   <span>{i.message}</span>
                 </motion.li>
               ))}
@@ -189,19 +197,20 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
                 </Button>
               }
             />
-            <DialogContent>
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Publish to the community</DialogTitle>
-                <DialogDescription>Give it a name and a note. Everyone can see, like and comment on it.</DialogDescription>
+                <DialogDescription>Name it, add a photo or pick a drawing, say a few words.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={onPublish} className="grid gap-4">
+              <form onSubmit={onPublish} className="grid max-h-[70vh] gap-4 overflow-y-auto pr-1">
                 <Input autoFocus placeholder={suggested} value={pubName} onChange={(e) => setPubName(e.target.value)} maxLength={60} />
+                <CoverPicker bowl={bowl} name={pubName || suggested} value={cover} onChange={setCover} />
                 <Textarea placeholder="Why this bowl? What would you change? (optional)" value={pubDesc} onChange={(e) => setPubDesc(e.target.value)} maxLength={2000} />
                 {pubError && <p className="text-sm text-destructive">{pubError}</p>}
                 <DialogFooter>
                   <DialogClose render={<Button type="button" variant="ghost">Cancel</Button>} />
                   <Button type="submit" disabled={pubBusy}>
-                    Publish
+                    {pubBusy ? (cover.file ? 'Uploading…' : 'Publishing…') : 'Publish'}
                   </Button>
                 </DialogFooter>
               </form>
@@ -269,7 +278,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
 
 function Stat({ label, value, big, warn }: { label: string; value: string; big?: boolean; warn?: boolean }) {
   return (
-    <div className="rounded-lg border border-border bg-background/40 px-3 py-2">
+    <div className="rounded-xl border border-border bg-secondary/60 px-3 py-2">
       <div className="text-[11px] text-muted-foreground">{label}</div>
       <div className={cn('font-mono tabular-nums', big ? 'text-xl' : 'text-sm', warn && 'text-accent')}>{value}</div>
     </div>

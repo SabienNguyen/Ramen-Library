@@ -21,7 +21,7 @@ export function Layout() {
           <Outlet />
         </main>
         <footer className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-4 text-[11px] text-muted-foreground sm:px-6">
-          <span>Ramen Library — pick parts, check compatibility, argue about tare. Itadakimasu.</span>
+          <span>Ramen Library · a friendly place to build bowls and argue about tare. Be kind, bring ratios.</span>
           <span className="font-mono">React 19 · Tailwind v4 · Base UI · Motion · Hono · Better Auth · Drizzle</span>
         </footer>
       </div>
@@ -34,7 +34,7 @@ function Header() {
   const navigate = useNavigate()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-card/85 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-4 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_8px_24px_-8px_var(--primary)]">
@@ -51,7 +51,7 @@ function Header() {
               key={n.to}
               to={n.to}
               className={({ isActive }) =>
-                cn('flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm transition-colors hover:text-foreground', isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground')
+                cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-secondary hover:text-foreground', isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground')
               }
             >
               <n.icon className="size-4" />
@@ -63,7 +63,7 @@ function Header() {
         <div className="ml-auto flex items-center gap-2">
           {isPending ? null : session ? (
             <>
-              <Link to={`/u/${session.user.id}`} className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-sm hover:bg-secondary/60">
+              <Link to={`/u/${session.user.id}`} className="flex items-center gap-2 rounded-full py-1 pr-3 pl-1 text-sm font-semibold hover:bg-secondary">
                 <Avatar name={session.user.name} image={session.user.image} className="size-7" />
                 <span className="hidden max-w-32 truncate sm:inline">{session.user.name}</span>
               </Link>

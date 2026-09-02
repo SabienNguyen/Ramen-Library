@@ -2,12 +2,16 @@ import { Link, useLoaderData } from 'react-router'
 import { motion } from 'motion/react'
 import { ArrowRight, Hammer, MessagesSquare } from 'lucide-react'
 import { FORUM_CATEGORIES } from '../../shared/bowl'
+import { authClient } from '@/lib/auth-client'
+import { categoryStyle } from '@/lib/forum'
+import { CategoryChip } from '@/components/social/CategoryChip'
 import { timeAgo, type HomeData } from '@/lib/api'
 import { useBowlStore } from '@/store/bowl'
+import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { BowlCanvas } from '@/components/bowl/BowlCanvas'
+import { BuildCover } from '@/components/build/CoverArt'
 import { BuildCard } from '@/components/social/BuildCard'
 import { Empty } from '@/components/site/PageBits'
 
@@ -15,10 +19,26 @@ export function HomePage() {
   const data = useLoaderData() as HomeData
   const draft = useBowlStore((s) => s.bowl)
   const hero = data.builds.find((b) => b.id === data.topBuildId) ?? data.builds[0]
+  const { data: session, isPending } = authClient.useSession()
 
   return (
     <div className="grid gap-10">
-      <section className="grid items-center gap-8 lg:grid-cols-[1fr_420px]">
+      {!isPending && !session && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent bg-accent/40 px-4 py-3 text-sm">
+          <span>
+            <span className="font-semibold">New here?</span> You can browse everything. An account lets you publish bowls, like, comment and post in the forum.
+          </span>
+          <div className="flex gap-2">
+            <Link to="/signup" className={buttonVariants({ size: 'sm' })}>
+              Join the counter
+            </Link>
+            <Link to="/login" className={buttonVariants({ size: 'sm', variant: 'ghost' })}>
+              Sign in
+            </Link>
+          </div>
+        </div>
+      )}
+      <section className="grid items-center gap-8 lg:grid-cols-[1fr_440px]">
         <div>
           <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="font-mono text-[11px] tracking-widest text-primary uppercase">
             PCPartPicker, but for ramen
@@ -29,7 +49,7 @@ export function HomePage() {
             <span className="text-muted-foreground italic">Post the bowl.</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-4 max-w-lg text-muted-foreground">
-            Broth, tare, noodles, aroma oil, toppings — every part with real specs. A compatibility checker that knows thin noodles die under miso. A community that will tell you the same thing, louder.
+            Every part with real specs. A compatibility checker that knows thin noodles die under miso. And a friendly counter full of people who will happily tell you why your tare is wrong.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mt-6 flex flex-wrap gap-2">
             <Link to="/build" className={buttonVariants({ size: 'lg' })}>
@@ -48,9 +68,17 @@ export function HomePage() {
             <Stat n={data.stats.threads} label="threads" />
           </dl>
         </div>
-        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="grain rounded-2xl border border-border bg-card/40 p-4">
-          <BowlCanvas bowl={hero?.bowl ?? draft} interactive={!hero} />
-          <p className="mt-1 text-center font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          {hero ? (
+            <Link to={`/builds/${hero.id}`}>
+              <BuildCover build={hero} variant="full" />
+            </Link>
+          ) : (
+            <div className="grain p-4">
+              <BowlCanvas bowl={draft} interactive />
+            </div>
+          )}
+          <p className="px-3 py-2 text-center font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
             {hero ? (
               <>
                 Most liked · <Link to={`/builds/${hero.id}`} className="text-foreground hover:underline">{hero.name}</Link> by {hero.author.name}
@@ -89,7 +117,7 @@ export function HomePage() {
             </Link>
           </div>
           {data.threads.length ? (
-            <ul className="divide-y divide-border rounded-xl border border-border bg-card/60">
+            <ul className="divide-y divide-border rounded-2xl border border-border bg-card shadow-card">
               {data.threads.map((t) => (
                 <li key={t.id} className="flex items-center gap-3 px-4 py-3">
                   <Avatar name={t.author.name} image={t.author.image} className="size-7 text-[10px]" />
@@ -99,9 +127,7 @@ export function HomePage() {
                     </Link>
                     <p className="truncate text-xs text-muted-foreground">{t.body}</p>
                   </div>
-                  <Badge variant="secondary" className="hidden sm:inline-flex">
-                    {FORUM_CATEGORIES.find((c) => c.id === t.category)?.label}
-                  </Badge>
+                  <CategoryChip id={t.category} className="hidden sm:inline-flex" />
                   <span className="text-xs whitespace-nowrap text-muted-foreground">{timeAgo(t.lastActivityAt)}</span>
                 </li>
               ))}
@@ -113,9 +139,12 @@ export function HomePage() {
         <div className="grid content-start gap-2">
           <h3 className="font-mono text-[11px] tracking-widest text-muted-foreground uppercase">Categories</h3>
           {FORUM_CATEGORIES.map((c) => (
-            <Link key={c.id} to={`/forum?category=${c.id}`} className="rounded-lg border border-border bg-card/60 px-3.5 py-2.5 transition-colors hover:border-primary/40">
-              <div className="text-sm font-medium">{c.label}</div>
-              <div className="text-xs text-muted-foreground">{c.blurb}</div>
+            <Link key={c.id} to={`/forum?category=${c.id}`} className="flex items-start gap-2.5 rounded-xl border border-border bg-card px-3.5 py-2.5 shadow-card transition-colors hover:border-primary/40">
+              <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', categoryStyle[c.id]?.dot)} />
+              <span>
+                <span className="block text-sm font-semibold">{c.label}</span>
+                <span className="block text-xs text-muted-foreground">{c.blurb}</span>
+              </span>
             </Link>
           ))}
         </div>

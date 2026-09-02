@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { Link, useLoaderData, useNavigate } from 'react-router'
-import { FORUM_CATEGORIES } from '../../shared/bowl'
 import { api, timeAgo, type BuildItem, type Profile } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
 import { Avatar } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { CategoryChip } from '@/components/social/CategoryChip'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -59,10 +58,10 @@ export function ProfilePage() {
       {threads.length > 0 && (
         <section>
           <h2 className="mb-3 font-serif text-2xl">Threads</h2>
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card/60">
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-card shadow-card">
             {threads.map((t) => (
               <li key={t.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                <Badge variant="secondary">{FORUM_CATEGORIES.find((c) => c.id === t.category)?.label ?? t.category}</Badge>
+                <CategoryChip id={t.category} />
                 <Link to={`/forum/${t.id}`} className="min-w-0 flex-1 truncate hover:underline">
                   {t.title}
                 </Link>
