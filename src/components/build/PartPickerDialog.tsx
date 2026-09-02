@@ -53,7 +53,7 @@ export function PartPickerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl gap-2 p-0">
-        <DialogHeader className="px-3 pt-3">
+        <DialogHeader className="px-5 pt-5">
           <DialogTitle>
             Choose {meta.multiple ? 'a topping' : slot === 'noodle' ? 'noodles' : slot === 'oil' ? 'an aroma oil' : `a ${meta.label.toLowerCase()}`}{' '}
             
@@ -61,16 +61,16 @@ export function PartPickerDialog({
           <DialogDescription>{meta.blurb}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap items-center gap-2 px-3">
+        <div className="flex flex-wrap items-center gap-3 px-5">
           <div className="relative min-w-40 flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input autoFocus placeholder="Search parts…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-8" />
           </div>
-          <div className="flex text-[11px]">
+          <div className="flex text-[12px]">
             {DIET_FILTERS.map((d, i) => (
               <span key={d.id} className="flex items-center">
                 {i > 0 && <span className="px-1 text-muted-foreground">|</span>}
-                <button type="button" onClick={() => setDiet(d.id)} className={cn(diet === d.id ? 'font-bold text-foreground' : 'text-primary hover:underline')}>
+                <button type="button" onClick={() => setDiet(d.id)} className={cn(diet === d.id ? 'font-semibold text-foreground' : 'text-link hover:underline')}>
                   {d.label}
                 </button>
               </span>
@@ -79,9 +79,9 @@ export function PartPickerDialog({
         </div>
 
         <div className="max-h-[60vh] overflow-auto border-t border-border">
-          <table className="w-full text-[12px]">
-            <thead className="sticky top-0 z-10 bg-secondary text-[11px]">
-              <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:font-bold">
+          <table className="w-full text-[13px]">
+            <thead className="sticky top-0 z-10 bg-muted text-[12px] text-muted-foreground">
+              <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:font-semibold">
                 <th className="text-left">
                   <SortButton label="Part" active={sort.key === 'name'} dir={sort.dir} onClick={() => toggleSort('name')} />
                 </th>
@@ -107,7 +107,7 @@ export function PartPickerDialog({
                 return (
                   <tr
                     key={p.id}
-                    className={cn('border-t border-border hover:bg-muted [&>td]:px-2 [&>td]:py-1.5', selected && 'bg-accent')}
+                    className={cn('border-t border-border hover:bg-muted [&>td]:px-3 [&>td]:py-2', selected && 'bg-accent/50')}
                     onDoubleClick={() => onPick(p.id)}
                   >
                     <td>
@@ -115,10 +115,10 @@ export function PartPickerDialog({
                         <PartSwatch slot={slot} part={p} className="size-9 shrink-0" />
                         <div className="min-w-0">
                           <div className="flex items-baseline gap-2">
-                            <span className="font-bold">{p.name}</span>
-                            {p.jp && <span className="text-[10px] text-muted-foreground">{p.jp}</span>}
+                            <span className="font-semibold">{p.name}</span>
+                            {p.jp && <span className="text-[11px] text-muted-foreground">{p.jp}</span>}
                           </div>
-                          <p className="line-clamp-1 max-w-72 text-[11px] text-muted-foreground">{p.note}</p>
+                          <p className="line-clamp-1 max-w-72 text-[12px] text-muted-foreground">{p.note}</p>
                         </div>
                       </div>
                     </td>
@@ -159,7 +159,7 @@ export function PartPickerDialog({
 function SortButton({ label, active, dir, onClick, align = 'left' }: { label: string; active: boolean; dir: 1 | -1; onClick: () => void; align?: 'left' | 'right' }) {
   const Icon = active ? (dir === 1 ? ArrowUp : ArrowDown) : ArrowUpDown
   return (
-    <button type="button" onClick={onClick} className={cn('inline-flex items-center gap-1 text-primary hover:underline', active && 'font-bold text-foreground', align === 'right' && 'flex-row-reverse')}>
+    <button type="button" onClick={onClick} className={cn('inline-flex items-center gap-1 hover:text-foreground', active && 'font-semibold text-foreground', align === 'right' && 'flex-row-reverse')}>
       {label}
       <Icon className="size-3" />
     </button>

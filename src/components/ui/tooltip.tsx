@@ -8,7 +8,7 @@ const TooltipTrigger = BaseTooltip.Trigger
 
 function TooltipContent({
   className,
-  sideOffset = 4,
+  sideOffset = 6,
   side = 'top',
   children,
   ...props
@@ -16,7 +16,7 @@ function TooltipContent({
   return (
     <BaseTooltip.Portal>
       <BaseTooltip.Positioner side={side} sideOffset={sideOffset} className="z-50">
-        <BaseTooltip.Popup className={cn('border border-[#999] bg-paper px-1.5 py-0.5 text-[11px] text-foreground', className)} {...props}>
+        <BaseTooltip.Popup className={cn('rounded-md bg-primary px-2 py-1 text-[12px] text-primary-foreground shadow-md', className)} {...props}>
           {children}
         </BaseTooltip.Popup>
       </BaseTooltip.Positioner>

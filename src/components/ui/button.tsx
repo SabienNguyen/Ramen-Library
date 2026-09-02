@@ -3,24 +3,24 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-1 whitespace-nowrap border text-[12px] leading-none outline-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-1 focus-visible:outline-dotted focus-visible:outline-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border text-[13px] font-medium leading-none outline-none transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-ring/40 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: 'border-[#888] bg-[#e6e6e6] font-bold text-foreground hover:bg-[#d9d9d9] active:bg-[#cccccc]',
-        secondary: 'border-[#aaa] bg-[#f2f2f2] text-foreground hover:bg-[#e6e6e6]',
-        outline: 'border-[#aaa] bg-white text-foreground hover:bg-[#f2f2f2]',
-        ghost: 'border-transparent bg-transparent text-primary hover:underline',
-        accent: 'border-[#888] bg-[#e6e6e6] font-bold text-foreground hover:bg-[#d9d9d9]',
-        destructive: 'border-[#aaa] bg-white text-destructive hover:bg-[#fdecea]',
-        link: 'border-0 bg-transparent p-0 text-primary underline',
+        default: 'border-primary bg-primary text-primary-foreground hover:bg-[#2c3239]',
+        secondary: 'border-input bg-card text-foreground shadow-card hover:bg-secondary',
+        outline: 'border-input bg-card text-foreground shadow-card hover:bg-secondary',
+        ghost: 'border-transparent bg-transparent text-foreground hover:bg-secondary',
+        accent: 'border-primary bg-primary text-primary-foreground hover:bg-[#2c3239]',
+        destructive: 'border-input bg-card text-destructive shadow-card hover:bg-[#fdf2f1]',
+        link: 'border-0 bg-transparent p-0 text-link hover:underline',
       },
       size: {
-        default: 'h-7 px-2.5',
-        sm: 'h-6 px-2 text-[11px]',
-        lg: 'h-8 px-3 text-[13px]',
-        icon: 'size-7',
-        'icon-sm': 'size-6',
+        default: 'h-8 px-3',
+        sm: 'h-7 px-2.5 text-[12px]',
+        lg: 'h-9 px-4 text-sm',
+        icon: 'size-8',
+        'icon-sm': 'size-7',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

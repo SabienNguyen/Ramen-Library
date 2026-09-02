@@ -16,7 +16,7 @@ export function LibraryGrid({ onLoad }: { onLoad: () => void }) {
   if (library.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-24 text-center">
-                <h3 className="text-[13px] font-bold">No saved builds yet</h3>
+                <h3 className="text-sm font-semibold">No saved builds yet</h3>
         <p className="max-w-sm text-sm text-muted-foreground">Drafts you save from the build page appear here.</p>
       </div>
     )
@@ -32,23 +32,23 @@ export function LibraryGrid({ onLoad }: { onLoad: () => void }) {
           return (
             <div key={b.id}>
               <Card className="overflow-hidden">
-                <div className="border-b border-border bg-muted p-3">
+                <div className="border-b border-border bg-[#f3efe7] p-3">
                   <BowlCanvas bowl={b} className="mx-auto max-w-56" />
                 </div>
                 <CardContent>
-                  <h3 className="text-[13px] font-bold">{b.name}</h3>
-                  <p className="text-[11px] text-muted-foreground">
+                  <h3 className="text-sm font-semibold">{b.name}</h3>
+                  <p className="text-[12px] text-muted-foreground">
                     {partLine || 'Empty build'} · {new Date(b.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </p>
-                  <div className="mt-1 flex items-center gap-3 text-[11px] tabular-nums">
+                  <div className="mt-1 flex items-center gap-3 text-[12px] tabular-nums">
                     <span>{fmtPrice(totals.price)}</span>
                     <span className="text-muted-foreground">{fmtMinutes(totals.minutes)}</span>
                     <span className="text-muted-foreground">{totals.kcal} kcal</span>
-                    {errors > 0 && <Badge variant="default" className="ml-auto text-[10px]">{errors} issue{errors > 1 ? 's' : ''}</Badge>}
+                    {errors > 0 && <Badge variant="default" className="ml-auto text-[11px]">{errors} issue{errors > 1 ? 's' : ''}</Badge>}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">
                     {toppingNames.slice(0, 5).map((n) => (
-                      <Badge key={n} variant="outline" className="text-[11px]">
+                      <Badge key={n} variant="outline" className="text-[12px]">
                         {n}
                       </Badge>
                     ))}

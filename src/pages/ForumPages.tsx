@@ -29,15 +29,15 @@ export function ForumPage() {
           </Link>
         }
       />
-      <div className="mb-2 text-[11px]">
+      <div className="mb-3 text-[13px]">
         <span className="text-muted-foreground">Categories: </span>
-        <Link to="/forum" className={cn(!category && 'font-bold text-foreground')}>
+        <Link to="/forum" className={cn(!category && 'font-semibold text-foreground')}>
           All
         </Link>
         {FORUM_CATEGORIES.map((c) => (
           <span key={c.id}>
             <span className="px-1 text-muted-foreground">·</span>
-            <Link to={`/forum?category=${c.id}`} className={cn(category === c.id && 'font-bold text-foreground')} title={c.blurb}>
+            <Link to={`/forum?category=${c.id}`} className={cn(category === c.id && 'font-semibold text-foreground')} title={c.blurb}>
               {c.label}
             </Link>
           </span>
@@ -77,13 +77,13 @@ export function NewThreadPage() {
       {isPending ? null : !session ? (
         <SignInPrompt what="start a thread" next="/forum/new" />
       ) : (
-        <form onSubmit={submit} className="border border-border">
-          <table className="w-full text-[12px]">
-            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-border [&>tr>td]:px-2 [&>tr>td]:py-1.5 [&>tr>td:first-child]:w-28 [&>tr>td:first-child]:bg-muted [&>tr>td:first-child]:font-bold [&>tr>td:first-child]:align-top">
+        <form onSubmit={submit} className="overflow-hidden rounded-lg border border-border bg-card shadow-card">
+          <table className="w-full text-[13px]">
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-border [&>tr>td]:px-3 [&>tr>td]:py-2.5 [&>tr>td:first-child]:w-28 [&>tr>td:first-child]:bg-muted [&>tr>td:first-child]:text-[12px] [&>tr>td:first-child]:font-medium [&>tr>td:first-child]:text-muted-foreground [&>tr>td:first-child]:align-top">
               <tr>
                 <td>Category</td>
                 <td>
-                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-7 border border-input bg-white px-1 text-[12px]">
+                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-8 rounded-md border border-input bg-card px-2 text-[13px] shadow-card">
                     {FORUM_CATEGORIES.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.label}
@@ -106,14 +106,14 @@ export function NewThreadPage() {
               </tr>
             </tbody>
           </table>
-          <div className="flex items-center gap-2 p-2">
+          <div className="flex items-center gap-2 p-3">
             <Button type="submit" disabled={busy}>
               Submit
             </Button>
             <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
               Cancel
             </Button>
-            {error && <span className="text-[11px] text-destructive">{error}</span>}
+            {error && <span className="text-[12px] text-destructive">{error}</span>}
           </div>
         </form>
       )}
@@ -135,10 +135,10 @@ export function ThreadPage() {
 
   return (
     <div className="grid gap-2">
-      <div className="text-[11px] text-muted-foreground">
-        <Link to="/forum">Forum</Link> » <CategoryChip id={thread.category} />
+      <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+        <Link to="/forum">Forum</Link> <span>/</span> <CategoryChip id={thread.category} />
       </div>
-      <h1 className="text-[16px] font-bold">{thread.title}</h1>
+      <h1 className="text-xl font-semibold">{thread.title}</h1>
       <PostRow author={thread.author} createdAt={thread.createdAt} tag="Original poster" onDelete={mine ? remove : undefined}>
         {thread.body}
       </PostRow>

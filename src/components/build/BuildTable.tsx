@@ -25,11 +25,11 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
   }
 
   return (
-    <div className={cn('border border-border bg-card', className)}>
+    <div className={cn('overflow-hidden rounded-lg border border-border bg-card shadow-card', className)}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-[12px]">
-          <thead className="bg-secondary text-[11px]">
-            <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-bold">
+        <table className="w-full min-w-[640px] text-[13px]">
+          <thead className="bg-muted text-[12px] text-muted-foreground">
+            <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-semibold">
               <th className="w-36">Component</th>
               <th>Selection</th>
               <th className="w-16 text-right!">kcal</th>
@@ -102,7 +102,7 @@ function SlotLabel({ slot }: { slot: Slot }) {
         {meta.label}
         {meta.required && <span className="ml-1 text-primary" title="Required">*</span>}
       </div>
-      <div className="text-[10px] text-muted-foreground">{meta.jp}</div>
+      <div className="text-[11px] text-muted-foreground">{meta.jp}</div>
     </div>
   )
 }
@@ -126,8 +126,8 @@ function Row({
     <tr
       className={cn(
         'border-t border-border/60 border-l-2 border-l-transparent',
-        flag === 'error' && 'border-l-destructive bg-[#fdecea]',
-        flag === 'warn' && 'border-l-[#d6c87a] bg-accent',
+        flag === 'error' && 'border-l-destructive bg-[#fdf2f1]',
+        flag === 'warn' && 'border-l-[#e2c65a] bg-accent/60',
       )}
     >
       <td className="px-2 py-1.5 align-top">{label === '' ? null : <SlotLabel slot={slot} />}</td>
@@ -138,8 +138,8 @@ function Row({
               <PartSwatch slot={slot} part={part} className="size-9 shrink-0" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="font-bold">{part.name}</span>
-                  {part.jp && <span className="text-[10px] text-muted-foreground">{part.jp}</span>}
+                  <span className="font-semibold">{part.name}</span>
+                  {part.jp && <span className="text-[11px] text-muted-foreground">{part.jp}</span>}
                 </div>
                 <div className="mt-0.5 flex flex-wrap gap-1">
                   {part.tags.map((t) => (

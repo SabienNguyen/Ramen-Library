@@ -28,8 +28,8 @@ export function BuilderPage() {
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-[18px] font-bold">Build</h1>
-          <Link to="/drafts" className="text-[11px]">
+          <h1 className="text-xl font-semibold">Build</h1>
+          <Link to="/drafts" className="text-[12px]">
             Drafts{draftCount ? ` (${draftCount})` : ''}
           </Link>
         </div>
@@ -38,9 +38,9 @@ export function BuilderPage() {
       </div>
 
       <aside className="flex flex-col gap-4 lg:sticky lg:top-4">
-        <section className="flex flex-col items-center border border-border bg-card p-2">
+        <section className="flex flex-col items-center rounded-lg border border-border bg-card p-3 shadow-card">
           <BowlCanvas bowl={bowl} interactive className="max-w-[320px]" />
-          <p className="mt-1 text-center text-[11px] text-muted-foreground">Drag toppings to arrange. Tap one to remove it.</p>
+          <p className="mt-1 text-center text-[12px] text-muted-foreground">Drag toppings to arrange. Tap one to remove it.</p>
         </section>
         <BuildSummary totals={totals} issues={issues} />
       </aside>

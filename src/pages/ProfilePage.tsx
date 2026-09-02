@@ -28,22 +28,22 @@ export function ProfilePage() {
       <div className="flex flex-wrap items-center gap-4">
         <Avatar name={profile.name} image={profile.image} className="size-16 text-[16px]" />
         <div className="min-w-0 flex-1">
-          <h1 className="text-[18px] font-bold">{profile.name}</h1>
-          <p className="text-[11px] text-muted-foreground">
+          <h1 className="text-xl font-semibold">{profile.name}</h1>
+          <p className="text-[12px] text-muted-foreground">
             Joined {new Date(profile.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} · {builds.length} build{builds.length === 1 ? '' : 's'} · {threads.length} thread
             {threads.length === 1 ? '' : 's'} · {postCount} repl{postCount === 1 ? 'y' : 'ies'}
           </p>
-          {profile.bio && <p className="mt-1 max-w-prose text-[12px] whitespace-pre-wrap">{profile.bio}</p>}
+          {profile.bio && <p className="mt-1 max-w-prose text-[13px] whitespace-pre-wrap">{profile.bio}</p>}
         </div>
         {me && (
-          <Link to="/settings" className="text-[11px]">
+          <Link to="/settings" className="text-[12px]">
             Edit profile
           </Link>
         )}
       </div>
 
       <section>
-        <h2 className="mb-2 border-b border-border pb-1 text-[14px] font-bold">Builds</h2>
+        <h2 className="mb-2 border-b border-border pb-1 text-[15px] font-semibold">Builds</h2>
         {builds.length ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {builds.map((b) => (
@@ -57,15 +57,15 @@ export function ProfilePage() {
 
       {threads.length > 0 && (
         <section>
-          <h2 className="mb-2 border-b border-border pb-1 text-[14px] font-bold">Threads</h2>
-          <ul className="divide-y divide-border border border-border bg-card">
+          <h2 className="mb-2 border-b border-border pb-1 text-[15px] font-semibold">Threads</h2>
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-card">
             {threads.map((t) => (
-              <li key={t.id} className="flex items-center gap-2 px-2 py-1.5 text-[12px]">
+              <li key={t.id} className="flex items-center gap-2 px-2 py-1.5 text-[13px]">
                 <CategoryChip id={t.category} />
                 <Link to={`/forum/${t.id}`} className="min-w-0 flex-1 truncate hover:underline">
                   {t.title}
                 </Link>
-                <span className="text-[11px] text-muted-foreground">{timeAgo(t.createdAt)}</span>
+                <span className="text-[12px] text-muted-foreground">{timeAgo(t.createdAt)}</span>
               </li>
             ))}
           </ul>
@@ -116,20 +116,20 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="grid gap-4">
-            <label className="grid gap-1 text-[12px]">
-              <span className="font-bold">Display name</span>
+            <label className="grid gap-1 text-[13px]">
+              <span className="font-semibold">Display name</span>
               <Input value={curName} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={40} required />
             </label>
-            <label className="grid gap-1 text-[12px]">
-              <span className="font-bold">Bio</span>
+            <label className="grid gap-1 text-[13px]">
+              <span className="font-semibold">Bio</span>
               <Textarea value={curBio} onChange={(e) => setBio(e.target.value)} maxLength={300} placeholder="A line about you" />
             </label>
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={busy}>
                 Save
               </Button>
-              {msg && <span className="text-[11px] text-muted-foreground">{msg}</span>}
-              <span className="ml-auto text-[11px] text-muted-foreground">{user.email}</span>
+              {msg && <span className="text-[12px] text-muted-foreground">{msg}</span>}
+              <span className="ml-auto text-[12px] text-muted-foreground">{user.email}</span>
             </div>
           </form>
         </CardContent>

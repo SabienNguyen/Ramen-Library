@@ -42,7 +42,7 @@ export function CoverPicker({ bowl, name, value, onChange }: { bowl: Bowl; name?
     <div className="grid gap-3">
       <div>
         <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-[11px] font-bold">Photo</span>
+          <span className="text-[12px] font-semibold">Photo</span>
           {hasPhoto && (
             <button type="button" onClick={clearPhoto} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive">
               <X className="size-3" /> Remove
@@ -71,20 +71,20 @@ export function CoverPicker({ bowl, name, value, onChange }: { bowl: Bowl; name?
               pick(e.dataTransfer.files[0] ?? null)
             }}
             className={cn(
-              'flex w-full flex-col items-center justify-center gap-1 border border-dashed px-3 py-4 text-center',
+              'flex w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed px-3 py-5 text-center',
               dragging ? 'border-primary bg-muted' : 'border-input hover:bg-muted',
             )}
           >
             <ImagePlus className="size-6 text-muted-foreground" />
-            <span className="text-[12px] font-bold">Add a photo</span>
-            <span className="text-[11px] text-muted-foreground">JPEG, PNG or WebP up to 8 MB.</span>
+            <span className="text-[13px] font-semibold">Add a photo</span>
+            <span className="text-[12px] text-muted-foreground">JPEG, PNG or WebP up to 8 MB.</span>
           </button>
         )}
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0] ?? null)} />
       </div>
 
       <div>
-        <div className="mb-1 text-[11px] font-bold">{hasPhoto ? 'Or use a drawing' : 'Drawing'}</div>
+        <div className="mb-1 text-[12px] font-semibold">{hasPhoto ? 'Or use a drawing' : 'Drawing'}</div>
         <div className="grid grid-cols-5 gap-2">
           {COVER_TEMPLATES.map((t) => {
             const selected = !hasPhoto && value.templateId === t.id
@@ -94,10 +94,10 @@ export function CoverPicker({ bowl, name, value, onChange }: { bowl: Bowl; name?
                 type="button"
                 title={t.blurb}
                 onClick={() => onChange({ ...value, file: null, imageUrl: null, thumbUrl: null, templateId: t.id })}
-                className={cn('overflow-hidden border-2 text-left', selected ? 'border-primary' : 'border-border hover:border-input')}
+                className={cn('overflow-hidden rounded-md border-2 text-left', selected ? 'border-ring' : 'border-border hover:border-input')}
               >
                 <BuildCover build={{ bowl, templateId: t.id, name }} className="aspect-[4/3]" />
-                <span className="block truncate px-1 py-0.5 text-[10px]">{t.label}</span>
+                <span className="block truncate px-1 py-0.5 text-[11px]">{t.label}</span>
               </button>
             )
           })}

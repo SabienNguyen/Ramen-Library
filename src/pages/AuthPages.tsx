@@ -13,8 +13,8 @@ function useNext() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="grid gap-1 text-[12px]">
-      <span className="font-bold">{label}</span>
+    <label className="grid gap-1 text-[13px]">
+      <span className="font-semibold">{label}</span>
       {children}
     </label>
   )
@@ -47,11 +47,11 @@ export function LoginPage() {
         <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
-        {error && <p className="text-[11px] text-destructive">{error}</p>}
+        {error && <p className="text-[12px] text-destructive">{error}</p>}
         <Button type="submit" disabled={busy}>
           Log in
         </Button>
-        <p className="text-center text-[11px] text-muted-foreground">
+        <p className="text-center text-[12px] text-muted-foreground">
           No account?{' '}
           <Link to={`/signup?next=${encodeURIComponent(next)}`}>
             Register
@@ -93,11 +93,11 @@ export function SignupPage() {
         <Field label="Password">
           <Input type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
         </Field>
-        {error && <p className="text-[11px] text-destructive">{error}</p>}
+        {error && <p className="text-[12px] text-destructive">{error}</p>}
         <Button type="submit" disabled={busy}>
           Register
         </Button>
-        <p className="text-center text-[11px] text-muted-foreground">
+        <p className="text-center text-[12px] text-muted-foreground">
           Already registered?{' '}
           <Link to={`/login?next=${encodeURIComponent(next)}`}>
             Log in

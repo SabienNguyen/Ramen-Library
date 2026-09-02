@@ -87,7 +87,7 @@ export function BuildPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
       <aside className="grid gap-4 lg:sticky lg:top-4">
-        <section className="relative border border-border bg-card">
+        <section className="relative overflow-hidden rounded-lg border border-border bg-card shadow-card">
           <BuildCover build={build} variant="full" />
           {mine && (
             <Dialog open={coverOpen} onOpenChange={setCoverOpen}>
@@ -114,10 +114,10 @@ export function BuildPage() {
           )}
         </section>
         {(build.imageUrl || (build.templateId && build.templateId !== 'live')) && (
-          <section className="flex items-center gap-3 border border-border bg-card p-2">
+          <section className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-card">
             <BowlCanvas bowl={build.bowl} className="w-28 shrink-0" />
-            <div className="text-[11px] text-muted-foreground">
-              <div className="font-bold text-foreground">Parts render</div>
+            <div className="text-[12px] text-muted-foreground">
+              <div className="font-semibold text-foreground">Parts render</div>
               Generated from the parts list.
             </div>
           </section>
@@ -135,7 +135,7 @@ export function BuildPage() {
                   <Flame key={i} className={cn('size-3', i < totals.spice ? 'fill-primary text-primary' : 'text-muted-foreground/40')} />
                 ))}
               </Badge>
-              <span className="ml-auto text-[11px] text-muted-foreground">
+              <span className="ml-auto text-[12px] text-muted-foreground">
                 body {totals.bodyLoad}/{totals.bodyCapacity}
               </span>
             </div>
@@ -147,10 +147,10 @@ export function BuildPage() {
         <div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-[18px] font-bold">{build.name}</h1>
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+              <h1 className="text-xl font-semibold">{build.name}</h1>
+              <div className="mt-1 flex items-center gap-2 text-[12px] text-muted-foreground">
                 <Link to={`/u/${build.author.id}`} className="flex items-center gap-1.5 hover:text-foreground">
-                  <Avatar name={build.author.name} image={build.author.image} className="size-6 text-[10px]" />
+                  <Avatar name={build.author.name} image={build.author.image} className="size-6 text-[11px]" />
                   {build.author.name}
                 </Link>
                 <span>· {timeAgo(build.createdAt)}</span>
@@ -179,13 +179,13 @@ export function BuildPage() {
               )}
             </div>
           </div>
-          {build.description && <p className="mt-3 max-w-prose text-[12px] leading-relaxed whitespace-pre-wrap">{build.description}</p>}
+          {build.description && <p className="mt-3 max-w-prose text-[13px] leading-relaxed whitespace-pre-wrap">{build.description}</p>}
         </div>
 
-        <section className="border border-border bg-card">
-          <table className="w-full text-[12px]">
-            <thead className="bg-secondary text-[11px]">
-              <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-bold">
+        <section className="overflow-hidden rounded-lg border border-border bg-card shadow-card">
+          <table className="w-full text-[13px]">
+            <thead className="bg-muted text-[12px] text-muted-foreground">
+              <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-semibold">
                 <th className="w-28">Component</th>
                 <th>Part</th>
                 <th className="text-right!">kcal</th>
@@ -201,8 +201,8 @@ export function BuildPage() {
                     <div className="flex items-center gap-3">
                       <PartSwatch slot={slot} part={part} className="size-8 shrink-0" />
                       <div className="min-w-0">
-                        <span className="font-bold">{part.name}</span>
-                        {part.jp && <span className="ml-1 text-[10px] text-muted-foreground">{part.jp}</span>}
+                        <span className="font-semibold">{part.name}</span>
+                        {part.jp && <span className="ml-1 text-[11px] text-muted-foreground">{part.jp}</span>}
                         <div className="mt-0.5 flex flex-wrap gap-1">
                           {part.tags.map((t) => (
                             <TagBadge key={t} tag={t} />
@@ -229,15 +229,15 @@ export function BuildPage() {
 
         {issues.length > 0 && (
           <section>
-            <h2 className="mb-1 text-[12px] font-bold">Compatibility notes</h2>
+            <h2 className="mb-1 text-[13px] font-semibold">Compatibility notes</h2>
             <ul className="grid gap-1.5">
               {issues.map((i) => (
                 <li
                   key={i.message}
                   className={cn(
-                    'flex gap-2 border px-2 py-1.5 text-[11px] leading-snug',
-                    i.level === 'error' && 'border-[#e0a0a0] bg-[#fdecea]',
-                    i.level === 'warn' && 'border-[#d6c87a] bg-accent',
+                    'flex gap-2 rounded-md border px-2.5 py-2 text-[12px] leading-snug',
+                    i.level === 'error' && 'border-[#f0c4bf] bg-[#fdf2f1]',
+                    i.level === 'warn' && 'border-[#efe0a8] bg-accent',
                     i.level === 'note' && 'border-border bg-muted text-muted-foreground',
                   )}
                 >
@@ -250,7 +250,7 @@ export function BuildPage() {
         )}
 
         <section>
-          <h2 className="mb-2 border-b border-border pb-1 text-[14px] font-bold">Comments ({build.comments.length})</h2>
+          <h2 className="mb-2 border-b border-border pb-1 text-[15px] font-semibold">Comments ({build.comments.length})</h2>
           <Discussion items={build.comments} postTo={`/builds/${build.id}/comments`} deletePath={(id) => `/comments/${id}`} placeholder="Write a comment" next={`/builds/${build.id}`} />
         </section>
       </div>
@@ -260,9 +260,9 @@ export function BuildPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-border px-2 py-1">
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className="text-[12px] tabular-nums">{value}</div>
+    <div className="rounded-md border border-border px-2.5 py-1.5">
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="text-[13px] tabular-nums">{value}</div>
     </div>
   )
 }

@@ -32,10 +32,10 @@ export function CompatBar({ issues, className }: { issues: Issue[]; className?: 
   return (
     <div
       className={cn(
-        'flex items-center gap-2 border px-2 py-1.5 text-[12px]',
-        tone === 'ok' && 'border-[#a5d6a7] bg-[#eef7ee] text-scallion',
-        tone === 'warn' && 'border-[#d6c87a] bg-accent text-accent-foreground',
-        tone === 'error' && 'border-[#e0a0a0] bg-[#fdecea] text-destructive',
+        'flex items-center gap-2 rounded-md border px-3 py-2 text-[13px]',
+        tone === 'ok' && 'border-[#cfe5d6] bg-[#eef7f1] text-scallion',
+        tone === 'warn' && 'border-[#efe0a8] bg-accent text-accent-foreground',
+        tone === 'error' && 'border-[#f0c4bf] bg-[#fdf2f1] text-destructive',
         className,
       )}
       role="status"
@@ -141,10 +141,10 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
               {totals.bodyLoad} / {totals.bodyCapacity}
             </span>
           </div>
-          <div className="h-2 border border-border bg-muted">
+          <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
             <div className={cn('h-full', bodyTone)} style={{ width: `${bodyPct}%` }} />
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">How much topping weight the broth can carry.</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">How much topping weight the broth can carry.</p>
         </div>
 
         <div>
@@ -154,9 +154,9 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
                 <li
                   key={i.message}
                   className={cn(
-                    'flex gap-2 border px-2 py-1.5 text-[11px] leading-snug',
-                    i.level === 'error' && 'border-[#e0a0a0] bg-[#fdecea]',
-                    i.level === 'warn' && 'border-[#d6c87a] bg-accent',
+                    'flex gap-2 rounded-md border px-2.5 py-2 text-[12px] leading-snug',
+                    i.level === 'error' && 'border-[#f0c4bf] bg-[#fdf2f1]',
+                    i.level === 'warn' && 'border-[#efe0a8] bg-accent',
                     i.level === 'note' && 'border-border bg-muted text-muted-foreground',
                   )}
                 >
@@ -204,7 +204,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
               </form>
             </DialogContent>
           </Dialog>
-          {!totals.complete && <p className="-mt-1 text-center text-[11px] text-muted-foreground">Broth, tare and noodles are required to publish.</p>}
+          {!totals.complete && <p className="-mt-1 text-center text-[12px] text-muted-foreground">Broth, tare and noodles are required to publish.</p>}
           <div className="flex flex-wrap gap-2">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger
@@ -266,9 +266,9 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
 
 function Stat({ label, value, big, warn }: { label: string; value: string; big?: boolean; warn?: boolean }) {
   return (
-    <div className="border border-border px-2 py-1">
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className={cn('tabular-nums', big ? 'text-[14px] font-bold' : 'text-[12px]', warn && 'text-destructive')}>{value}</div>
+    <div className="rounded-md border border-border px-2.5 py-1.5">
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className={cn('tabular-nums', big ? 'text-[15px] font-semibold' : 'text-[13px]', warn && 'text-destructive')}>{value}</div>
     </div>
   )
 }

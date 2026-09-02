@@ -1,31 +1,33 @@
 @import 'tailwindcss';
 
 /*
-  Ramen Library — barebones. A forum from 2004: Verdana, 1px borders,
-  square corners, blue links, gray buttons, nothing moves.
+  Ramen Library — refined. System UI type, soft gray borders, 6px corners,
+  hairline shadows, one dark primary button, blue links. Quiet.
 */
 :root {
-  --background: #ffffff;
-  --foreground: #222222;
+  --background: #f6f7f9;
+  --foreground: #1f2328;
   --card: #ffffff;
-  --card-foreground: #222222;
+  --card-foreground: #1f2328;
   --popover: #ffffff;
-  --popover-foreground: #222222;
-  --primary: #1a4b8c; /* link blue */
+  --popover-foreground: #1f2328;
+  --primary: #1f2328;
   --primary-foreground: #ffffff;
-  --secondary: #f0f0f0;
-  --secondary-foreground: #222222;
-  --muted: #f7f7f7;
-  --muted-foreground: #666666;
-  --accent: #fff8d6;
-  --accent-foreground: #6b5300;
-  --destructive: #b00020;
-  --border: #c8c8c8;
-  --input: #999999;
-  --ring: #1a4b8c;
-  --scallion: #2e7d32;
+  --secondary: #f1f3f5;
+  --secondary-foreground: #1f2328;
+  --muted: #f6f7f9;
+  --muted-foreground: #6b7280;
+  --accent: #fff6d6;
+  --accent-foreground: #6b4e00;
+  --destructive: #c0392b;
+  --border: #e3e6ea;
+  --input: #d0d5dc;
+  --ring: #2563eb;
+  --link: #0b57d0;
+  --scallion: #2f7d4a;
   --shoyu: #6b4a2a;
-  --paper: #ffffe1;
+  --paper: #ffffff;
+  --radius: 6px;
 }
 
 @theme inline {
@@ -47,30 +49,36 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-link: var(--link);
   --color-scallion: var(--scallion);
   --color-shoyu: var(--shoyu);
   --color-paper: var(--paper);
-  --font-sans: Verdana, Tahoma, Geneva, Arial, sans-serif;
-  --font-serif: Verdana, Tahoma, Geneva, Arial, sans-serif;
-  --font-mono: 'Courier New', Courier, monospace;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 10px;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
 @layer base {
   * {
     @apply border-border;
-    border-radius: 0 !important;
   }
   html {
     color-scheme: light;
-    font-size: 12px;
+    font-size: 14px;
   }
   body {
-    @apply bg-background text-foreground font-sans;
-    line-height: 1.45;
+    @apply bg-background text-foreground font-sans antialiased;
+    line-height: 1.5;
     min-height: 100dvh;
   }
   a {
-    color: var(--primary);
+    color: var(--link);
   }
   a:hover {
     text-decoration: underline;
@@ -78,10 +86,11 @@
   h1,
   h2,
   h3 {
-    font-weight: bold;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
   ::selection {
-    background: #cfe0ff;
+    background: #dbe7ff;
   }
   button,
   input,
@@ -95,5 +104,5 @@
   position: relative;
 }
 @utility shadow-card {
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
 }

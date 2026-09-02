@@ -18,7 +18,7 @@ export function BuildCover({ build, variant = 'thumb', className, alt }: { build
   const id = (build.templateId ?? 'live') as CoverTemplateId
   if (id !== 'live') return <CoverTemplate id={id} bowl={build.bowl} name={build.name} className={cn('aspect-[4/3] w-full', className)} />
   return (
-    <div className={cn('flex aspect-[4/3] w-full items-center justify-center bg-muted', className)}>
+    <div className={cn('flex aspect-[4/3] w-full items-center justify-center bg-[#f3efe7]', className)}>
       <BowlCanvas bowl={build.bowl} className="h-full w-auto max-w-[70%]" />
     </div>
   )
