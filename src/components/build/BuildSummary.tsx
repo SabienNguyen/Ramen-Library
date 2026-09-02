@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import { AlertTriangle, BookmarkPlus, Check, CircleAlert, Eraser, Flame, Info, Link2, Shuffle } from 'lucide-react'
+import { AlertTriangle, BookmarkPlus, Check, CircleAlert, Eraser, Flame, Info, Link2, Shuffle, Upload } from 'lucide-react'
+import { api } from '@/lib/api'
+import { authClient } from '@/lib/auth-client'
 import type { Issue } from '@/lib/compat'
 import { bowlName } from '@/lib/naming'
 import { shareUrl } from '@/lib/share'
@@ -12,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 /** PCPartPicker's green/yellow/red bar. */
@@ -51,6 +55,27 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
   const [name, setName] = useState('')
   const [flash, setFlash] = useState<'saved' | 'copied' | null>(null)
   const suggested = bowlName(bowl)
+  const navigate = useNavigate()
+  const { data: session } = authClient.useSession()
+  const [pubOpen, setPubOpen] = useState(false)
+  const [pubName, setPubName] = useState('')
+  const [pubDesc, setPubDesc] = useState('')
+  const [pubBusy, setPubBusy] = useState(false)
+  const [pubError, setPubError] = useState<string | null>(null)
+
+  async function onPublish(e: React.FormEvent) {
+    e.preventDefault()
+    setPubBusy(true)
+    setPubError(null)
+    try {
+      const { id } = await api<{ id: string }>('/builds', { method: 'POST', json: { name: pubName || suggested, description: pubDesc, bowl } })
+      setPubOpen(false)
+      navigate(`/builds/${id}`)
+    } catch (err) {
+      setPubError(err instanceof Error ? err.message : 'Publish failed.')
+      setPubBusy(false)
+    }
+  }
 
   const ping = (what: 'saved' | 'copied') => {
     setFlash(what)
@@ -146,20 +171,57 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
           </ul>
         </div>
 
-        <div className="mt-auto flex flex-wrap gap-2 pt-2">
-          <Dialog open={open} onOpenChange={setOpen}>
+        <div className="mt-auto grid gap-2 pt-2">
+          <Dialog open={pubOpen} onOpenChange={setPubOpen}>
             <DialogTrigger
               render={
-                <Button className="flex-1" disabled={totals.partCount === 0}>
-                  {flash === 'saved' ? <Check /> : <BookmarkPlus />}
-                  {flash === 'saved' ? 'Saved' : 'Save build'}
+                <Button
+                  size="lg"
+                  disabled={!totals.complete}
+                  onClick={(e) => {
+                    if (!session) {
+                      e.preventDefault()
+                      navigate('/login?next=/build')
+                    }
+                  }}
+                >
+                  <Upload /> Publish build
                 </Button>
               }
             />
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Name this build</DialogTitle>
-                <DialogDescription>It goes into your library exactly as it is now.</DialogDescription>
+                <DialogTitle>Publish to the community</DialogTitle>
+                <DialogDescription>Give it a name and a note. Everyone can see, like and comment on it.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={onPublish} className="grid gap-4">
+                <Input autoFocus placeholder={suggested} value={pubName} onChange={(e) => setPubName(e.target.value)} maxLength={60} />
+                <Textarea placeholder="Why this bowl? What would you change? (optional)" value={pubDesc} onChange={(e) => setPubDesc(e.target.value)} maxLength={2000} />
+                {pubError && <p className="text-sm text-destructive">{pubError}</p>}
+                <DialogFooter>
+                  <DialogClose render={<Button type="button" variant="ghost">Cancel</Button>} />
+                  <Button type="submit" disabled={pubBusy}>
+                    Publish
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          {!totals.complete && <p className="-mt-1 text-center text-[11px] text-muted-foreground">Broth, tare and noodles are required to publish.</p>}
+          <div className="flex flex-wrap gap-2">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger
+              render={
+                <Button variant="secondary" className="flex-1" disabled={totals.partCount === 0}>
+                  {flash === 'saved' ? <Check /> : <BookmarkPlus />}
+                  {flash === 'saved' ? 'Saved' : 'Save draft'}
+                </Button>
+              }
+            />
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Save a draft</DialogTitle>
+                <DialogDescription>Drafts live in this browser only. Publish when it's ready for people.</DialogDescription>
               </DialogHeader>
               <form
                 onSubmit={(e) => {
@@ -198,6 +260,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
           <Button variant="ghost" size="sm" onClick={reset} className="text-muted-foreground">
             Reset
           </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

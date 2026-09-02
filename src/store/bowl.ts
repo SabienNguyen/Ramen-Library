@@ -2,24 +2,10 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { broths, noodles, oils, tares, toppings, type Slot } from '@/data/ingredients'
 
-export type PlacedTopping = {
-  /** unique instance id */
-  key: string
-  toppingId: string
-  /** position inside the bowl, in bowl-space (viewBox 0..400) */
-  x: number
-  y: number
-  rotation: number
-}
+import { MAX_TOPPINGS, type Bowl, type PlacedTopping } from '../../shared/bowl'
 
-/** A build. Single slots are nullable = "Choose a …" like an empty part row. */
-export type Bowl = {
-  brothId: string | null
-  tareId: string | null
-  noodleId: string | null
-  oilId: string | null
-  toppings: PlacedTopping[]
-}
+export { MAX_TOPPINGS }
+export type { Bowl, PlacedTopping }
 
 export type SavedBowl = Bowl & {
   id: string
@@ -64,8 +50,6 @@ export function spotFor(index: number): { x: number; y: number; rotation: number
 }
 
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]
-
-export const MAX_TOPPINGS = 12
 
 export const useBowlStore = create<BowlState>()(
   persist(

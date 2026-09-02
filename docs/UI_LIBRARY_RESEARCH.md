@@ -57,10 +57,22 @@ Recommended use: cherry-pick individual components (e.g. a shimmer button, an in
 
 React Three Fiber + drei would make a genuinely stunning bowl. Deliberately parked: it's a big bundle and a big skill jump, and a well-layered SVG bowl already reads as "ramen" at a glance. Revisit once the 2D builder is loved.
 
+## Backend (added for accounts, comments and the forum)
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| **Hono** | ✅ Used | Web-standard request/response, tiny, runs on Node/Bun/Workers unchanged. The 2026 default for "just an API". |
+| **Better Auth** | ✅ Used | The TypeScript-native auth library that displaced Lucia/NextAuth for new projects; email+password now, social providers by config, Drizzle adapter, CLI generates the schema. |
+| **Drizzle ORM + SQLite** | ✅ Used | Typed SQL, migrations, one file on disk. Same code runs on Postgres or Turso by swapping the driver. |
+| Zod | ✅ Used | One schema for client forms and server validation (`shared/validation.ts`). |
+| Next.js / TanStack Start | ⚪ Skipped | Still no SSR need. A separate API keeps the SPA intact and the server trivially deployable. Revisit if SEO for build pages matters. |
+| Supabase / Convex / Firebase | ⚪ Skipped | Great for speed, but hosted lock-in and another dashboard. A 300-line Hono server is easier to own. |
+
 ## The stack we shipped
 
 ```
-Vite 8 · React 19 · TypeScript · Tailwind v4 · Base UI · shadcn-style components · Motion · Zustand · Lucide
+Vite 8 · React 19 · TypeScript · React Router · Tailwind v4 · Base UI · shadcn-style components · Motion · Zustand · Lucide
+Hono · Better Auth · Drizzle · SQLite · Zod
 ```
 
 ## Sources
