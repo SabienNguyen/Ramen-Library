@@ -4,6 +4,7 @@ import { byId } from '@/data/ingredients'
 import { darken, mix } from '@/lib/color'
 import { cn } from '@/lib/utils'
 import { useBowlStore, type Bowl, type PlacedTopping } from '@/store/bowl'
+import { computeTotals } from '@/lib/totals'
 import { ToppingGlyph } from './ToppingGlyph'
 
 /**
@@ -25,20 +26,25 @@ type Props = {
 }
 
 export function BowlCanvas({ bowl, interactive = false, className }: Props) {
-  const broth = byId.broth[bowl.brothId]
-  const tare = byId.tare[bowl.tareId]
-  const noodle = byId.noodle[bowl.noodleId]
-  const oil = byId.oil[bowl.oilId]
+  const broth = bowl.brothId ? byId.broth[bowl.brothId] : null
+  const tare = bowl.tareId ? byId.tare[bowl.tareId] : null
+  const noodle = bowl.noodleId ? byId.noodle[bowl.noodleId] : null
+  const oil = bowl.oilId ? byId.oil[bowl.oilId] : null
+  const totals = computeTotals(bowl)
 
-  const surface = mix(broth.color, tare.tint, tare.tintStrength)
-  const deep = mix(broth.deep, tare.tint, tare.tintStrength * 0.8)
-  const spiceTint = bowl.spice > 0 ? mix(surface, '#c2321d', 0.12 * bowl.spice) : surface
+  const base = broth?.color ?? '#3a2a1d'
+  const baseDeep = broth?.deep ?? '#2a1e14'
+  const surface = tare ? mix(base, tare.tint, tare.tintStrength) : base
+  const deep = tare ? mix(baseDeep, tare.tint, tare.tintStrength * 0.8) : baseDeep
+  const spiceTint = totals.spice > 0 ? mix(surface, '#c2321d', 0.12 * totals.spice) : surface
   const gradientId = `broth-${useId().replace(/:/g, '')}`
 
-  const noodlePaths = useMemo(() => buildNoodles(noodle.wave), [noodle.wave])
-  const oilDrops = useMemo(() => seededSpots(oil.drops, 7), [oil.drops])
-  const flakes = useMemo(() => seededSpots(bowl.spice * 7, 3), [bowl.spice])
-  const sheen = 0.08 + (bowl.richness / 100) * 0.22 + (oil.drops > 0 ? 0.08 : 0)
+  const wave = noodle?.wave ?? 0
+  const noodlePaths = useMemo(() => buildNoodles(wave), [wave])
+  const drops = oil?.drops ?? 0
+  const oilDrops = useMemo(() => seededSpots(drops, 7), [drops])
+  const flakes = useMemo(() => seededSpots(totals.spice * 7, 3), [totals.spice])
+  const sheen = 0.06 + (totals.richness / 100) * 0.22 + (oil ? 0.08 : 0)
 
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -87,11 +93,12 @@ export function BowlCanvas({ bowl, interactive = false, className }: Props) {
         <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="#3a2a1d" />
 
         {/* broth */}
-        <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={`url(#${gradientId})`} opacity={broth.opacity} />
+        <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={`url(#${gradientId})`} opacity={broth ? broth.opacity : 0.35} />
 
         {/* noodles */}
         <g clipPath={`url(#${gradientId}-clip)`}>
           <AnimatePresence mode="popLayout" initial={false}>
+            {noodle && (
             <motion.g
               key={noodle.id}
               initial={{ opacity: 0 }}
@@ -113,17 +120,18 @@ export function BowlCanvas({ bowl, interactive = false, className }: Props) {
                 />
               ))}
             </motion.g>
+            )}
           </AnimatePresence>
 
           {/* aroma oil */}
           <AnimatePresence>
             {oilDrops.map((s, i) => (
               <motion.circle
-                key={`${oil.id}-${i}`}
+                key={`${oil?.id}-${i}`}
                 cx={CX + s.x * RX * 0.9}
                 cy={CY + s.y * RY * 0.9}
                 r={s.r}
-                fill={oil.color}
+                fill={oil?.color ?? 'transparent'}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 0.85 }}
                 exit={{ scale: 0, opacity: 0 }}
@@ -142,7 +150,7 @@ export function BowlCanvas({ bowl, interactive = false, className }: Props) {
           <ellipse cx={CX - 40} cy={CY - 36} rx={70} ry={22} fill="white" opacity={sheen} filter={`url(#${gradientId}-blur)`} />
         </g>
 
-        {interactive && <Steam />}
+        {interactive && broth && <Steam />}
       </svg>
 
       {/* toppings layer */}

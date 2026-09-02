@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { broths, noodles, oils, tares, toppings } from '@/data/ingredients'
+import { broths, noodles, oils, tares, toppings, type Slot } from '@/data/ingredients'
 
 export type PlacedTopping = {
   /** unique instance id */
@@ -12,16 +12,13 @@ export type PlacedTopping = {
   rotation: number
 }
 
+/** A build. Single slots are nullable = "Choose a …" like an empty part row. */
 export type Bowl = {
-  brothId: string
-  tareId: string
-  noodleId: string
-  oilId: string
+  brothId: string | null
+  tareId: string | null
+  noodleId: string | null
+  oilId: string | null
   toppings: PlacedTopping[]
-  /** 0–3 chilies */
-  spice: number
-  /** 0–100 — how much fat / body */
-  richness: number
 }
 
 export type SavedBowl = Bowl & {
@@ -30,41 +27,33 @@ export type SavedBowl = Bowl & {
   savedAt: number
 }
 
+type SingleSlot = Exclude<Slot, 'topping'>
+
 type BowlState = {
   bowl: Bowl
   library: SavedBowl[]
-  setBroth: (id: string) => void
-  setTare: (id: string) => void
-  setNoodle: (id: string) => void
-  setOil: (id: string) => void
-  setSpice: (n: number) => void
-  setRichness: (n: number) => void
+  setPart: (slot: SingleSlot, id: string | null) => void
   addTopping: (id: string) => void
   removeTopping: (key: string) => void
   moveTopping: (key: string, x: number, y: number) => void
   clearToppings: () => void
   randomize: () => void
   reset: () => void
+  replace: (bowl: Bowl) => void
   save: (name: string) => SavedBowl
   load: (id: string) => void
   remove: (id: string) => void
 }
 
-const defaultBowl: Bowl = {
-  brothId: 'tonkotsu',
-  tareId: 'shoyu',
-  noodleId: 'thin',
-  oilId: 'none',
-  toppings: [],
-  spice: 0,
-  richness: 60,
-}
+export const emptyBowl: Bowl = { brothId: null, tareId: null, noodleId: null, oilId: null, toppings: [] }
+
+export const slotKey: Record<SingleSlot, keyof Bowl> = { broth: 'brothId', tare: 'tareId', noodle: 'noodleId', oil: 'oilId' }
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
-/** Deterministic-ish spot inside the bowl that avoids the exact centre pile-up. */
-function spotFor(index: number): { x: number; y: number; rotation: number } {
-  const golden = 2.399963 // golden angle
+/** Golden-angle spiral so toppings never pile up on the exact centre. */
+export function spotFor(index: number): { x: number; y: number; rotation: number } {
+  const golden = 2.399963
   const r = 28 + 22 * Math.sqrt((index % 9) + 1)
   const a = index * golden
   return {
@@ -76,20 +65,17 @@ function spotFor(index: number): { x: number; y: number; rotation: number } {
 
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]
 
+export const MAX_TOPPINGS = 12
+
 export const useBowlStore = create<BowlState>()(
   persist(
     (set, get) => ({
-      bowl: defaultBowl,
+      bowl: emptyBowl,
       library: [],
-      setBroth: (brothId) => set((s) => ({ bowl: { ...s.bowl, brothId } })),
-      setTare: (tareId) => set((s) => ({ bowl: { ...s.bowl, tareId } })),
-      setNoodle: (noodleId) => set((s) => ({ bowl: { ...s.bowl, noodleId } })),
-      setOil: (oilId) => set((s) => ({ bowl: { ...s.bowl, oilId } })),
-      setSpice: (spice) => set((s) => ({ bowl: { ...s.bowl, spice } })),
-      setRichness: (richness) => set((s) => ({ bowl: { ...s.bowl, richness } })),
+      setPart: (slot, id) => set((s) => ({ bowl: { ...s.bowl, [slotKey[slot]]: id } })),
       addTopping: (toppingId) =>
         set((s) => {
-          if (s.bowl.toppings.length >= 12) return s
+          if (s.bowl.toppings.length >= MAX_TOPPINGS) return s
           const placed: PlacedTopping = { key: uid(), toppingId, ...spotFor(s.bowl.toppings.length) }
           return { bowl: { ...s.bowl, toppings: [...s.bowl.toppings, placed] } }
         }),
@@ -107,36 +93,40 @@ export const useBowlStore = create<BowlState>()(
             brothId: pick(broths).id,
             tareId: pick(tares).id,
             noodleId: pick(noodles).id,
-            oilId: pick(oils).id,
-            spice: Math.floor(Math.random() * 4),
-            richness: 30 + Math.floor(Math.random() * 60),
+            oilId: Math.random() < 0.3 ? null : pick(oils).id,
             toppings: chosen.map((t, i) => ({ key: uid(), toppingId: t.id, ...spotFor(i) })),
           },
         })
       },
-      reset: () => set({ bowl: defaultBowl }),
+      reset: () => set({ bowl: emptyBowl }),
+      replace: (bowl) => set({ bowl }),
       save: (name) => {
-        const saved: SavedBowl = { ...get().bowl, id: uid(), name: name.trim() || 'Untitled bowl', savedAt: Date.now() }
+        const saved: SavedBowl = { ...get().bowl, id: uid(), name: name.trim() || 'Untitled build', savedAt: Date.now() }
         set((s) => ({ library: [saved, ...s.library] }))
         return saved
       },
       load: (id) => {
         const found = get().library.find((b) => b.id === id)
         if (!found) return
-        set({
-          bowl: {
-            brothId: found.brothId,
-            tareId: found.tareId,
-            noodleId: found.noodleId,
-            oilId: found.oilId,
-            toppings: found.toppings,
-            spice: found.spice,
-            richness: found.richness,
-          },
-        })
+        set({ bowl: { brothId: found.brothId, tareId: found.tareId, noodleId: found.noodleId, oilId: found.oilId, toppings: found.toppings } })
       },
       remove: (id) => set((s) => ({ library: s.library.filter((b) => b.id !== id) })),
     }),
-    { name: 'ramen-library', version: 1 },
+    {
+      name: 'ramen-library',
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<BowlState>
+        if (version < 2) {
+          const fix = <T extends Bowl>(b: T): T => ({ ...b, oilId: b.oilId === 'none' ? null : b.oilId })
+          return {
+            ...state,
+            bowl: state.bowl ? fix(state.bowl) : emptyBowl,
+            library: (state.library ?? []).map(fix),
+          }
+        }
+        return state
+      },
+    },
   ),
 )

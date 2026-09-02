@@ -1,8 +1,20 @@
 # Ramen Library 🍜
 
-**A visual library for creating ramen.**
+**PCPartPicker, but for ramen.**
 
-Build a bowl layer by layer — broth, tare, noodles, aroma oil, toppings — watch it render live, then save it to your library. Every ingredient comes with a one-line note, so the palette doubles as a field guide.
+Pick a broth, a tare, noodles, an aroma oil and toppings from a parts catalogue with real specs (price, prep time, calories, sodium, diet tags). A compatibility checker flags builds that don't work — thin noodles under miso, butter on a clear broth, more toppings than the broth can carry. Totals update live, the bowl renders as you go, and finished builds save to a library or share as a permalink.
+
+## How it maps
+
+| PCPartPicker | Ramen Library |
+| --- | --- |
+| Component slots (CPU, GPU, …) | Broth, tare, noodles, aroma oil, toppings (multiple) |
+| Parts list with specs & prices | `src/data/ingredients.ts` — price, minutes, kcal, sodium, tags |
+| Compatibility checker | `src/lib/compat.ts` — errors, warnings, notes per slot |
+| Wattage vs. PSU | Topping "body" vs. broth richness |
+| Price total | Price, prep time, calories, sodium totals |
+| Saved / completed builds | Library tab, localStorage |
+| Permalink | `#b=broth.tare.noodle.oil.topping,topping` |
 
 ## Run it
 
@@ -33,20 +45,21 @@ See [`docs/UI_LIBRARY_RESEARCH.md`](docs/UI_LIBRARY_RESEARCH.md) for what was co
 src/
   components/
     ui/         button, card, badge, input, tabs, dialog, slider, tooltip
-    bowl/       BowlCanvas (SVG + draggable toppings), IngredientPalette, RecipePanel, ToppingGlyph
-    library/    LibraryGrid (saved bowls)
-  data/         ingredients.ts — the catalogue (broths, tares, noodles, toppings, oils)
-  store/        bowl.ts — zustand store (current bowl + saved library)
-  lib/          cn(), colour mixing, bowl naming
+    build/      BuildTable (the build sheet), PartPickerDialog (sortable parts table), BuildSummary + CompatBar
+    bowl/       BowlCanvas (SVG preview + draggable toppings), ToppingGlyph
+    library/    LibraryGrid (saved builds)
+  data/         ingredients.ts — the parts catalogue and slot metadata
+  store/        bowl.ts — zustand store (current build + saved library)
+  lib/          compat.ts (rules), totals.ts, share.ts (permalinks), naming.ts, colour helpers
 ```
 
-## Adding an ingredient
+## Adding a part
 
-Append to the right array in `src/data/ingredients.ts`. Broths/tares/oils are colour-driven and need nothing else. A new topping also needs a glyph in `src/components/bowl/ToppingGlyph.tsx` (60×60 viewBox).
+Append to the right array in `src/data/ingredients.ts` with its specs. A new topping also needs a glyph in `src/components/bowl/ToppingGlyph.tsx` (60×60 viewBox). Add a rule to `src/lib/compat.ts` if the part has opinions about what it pairs with.
 
 ## Roadmap ideas
 
-- Drag from the palette straight into the bowl (dnd-kit or Motion `Reorder`)
-- Share a bowl as a URL (encode the store state) and as a PNG
-- Regional presets (Hakata, Sapporo, Tokyo, Kitakata, Kumamoto) as one-tap starting points
-- A real recipe view: quantities, timings, and the actual method behind each layer
+- Price by vendor / region and a "where to buy" column
+- Regional presets (Hakata, Sapporo, Tokyo, Kitakata, Kumamoto) as starter builds
+- Export a build as a PNG or a shopping list
+- A real recipe view: quantities, timings, and the method behind each layer
