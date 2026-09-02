@@ -25,11 +25,11 @@ export function BuilderPage() {
   }, [replace])
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="font-serif text-3xl">Build</h1>
-          <Link to="/drafts" className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+          <h1 className="text-[18px] font-bold">Build</h1>
+          <Link to="/drafts" className="text-[11px]">
             Drafts{draftCount ? ` (${draftCount})` : ''}
           </Link>
         </div>
@@ -37,10 +37,10 @@ export function BuilderPage() {
         <BuildTable issues={issues} />
       </div>
 
-      <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
-        <section className="grain flex flex-col items-center rounded-2xl border border-border bg-card p-3 shadow-card">
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-4">
+        <section className="flex flex-col items-center border border-border bg-card p-2">
           <BowlCanvas bowl={bowl} interactive className="max-w-[320px]" />
-          <p className="mt-1 text-center text-xs text-muted-foreground">Drag toppings to arrange. Tap one to remove it.</p>
+          <p className="mt-1 text-center text-[11px] text-muted-foreground">Drag toppings to arrange. Tap one to remove it.</p>
         </section>
         <BuildSummary totals={totals} issues={issues} />
       </aside>

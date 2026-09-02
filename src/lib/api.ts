@@ -36,7 +36,7 @@ export type Profile = { id: string; name: string; image: string | null; bio: str
 export type HomeData = {
   stats: { builds: number; users: number; threads: number }
   builds: BuildItem[]
-  threads: (Omit<ThreadItem, 'replyCount'> & { author: Author })[]
+  threads: ThreadItem[]
   topBuildId: string | null
 }
 

@@ -3,21 +3,13 @@ import { Tabs as BaseTabs } from '@base-ui-components/react/tabs'
 import { cn } from '@/lib/utils'
 
 function Tabs({ className, ...props }: React.ComponentProps<typeof BaseTabs.Root>) {
-  return <BaseTabs.Root data-slot="tabs" className={cn('flex flex-col gap-3', className)} {...props} />
+  return <BaseTabs.Root data-slot="tabs" className={cn('flex flex-col gap-2', className)} {...props} />
 }
 
 function TabsList({ className, children, ...props }: React.ComponentProps<typeof BaseTabs.List>) {
   return (
-    <BaseTabs.List
-      data-slot="tabs-list"
-      className={cn(
-        'relative z-0 inline-flex h-10 w-fit items-center gap-1 rounded-full bg-muted p-1 text-muted-foreground',
-        className,
-      )}
-      {...props}
-    >
+    <BaseTabs.List data-slot="tabs-list" className={cn('flex items-end border-b border-border', className)} {...props}>
       {children}
-      <BaseTabs.Indicator className="absolute top-1/2 left-0 z-[-1] h-[calc(100%-0.5rem)] w-(--active-tab-width) -translate-y-1/2 translate-x-(--active-tab-left) rounded-full bg-card shadow-sm transition-[translate,width] duration-200 ease-out" />
     </BaseTabs.List>
   )
 }
@@ -27,7 +19,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof BaseTa
     <BaseTabs.Tab
       data-slot="tabs-trigger"
       className={cn(
-        "inline-flex h-full items-center justify-center gap-1.5 rounded-full px-3.5 text-sm font-semibold whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 data-[active]:text-foreground [&_svg:not([class*='size-'])]:size-4",
+        "-mb-px inline-flex items-center gap-1 border border-transparent px-2.5 py-1 text-[12px] text-primary outline-none hover:underline data-[active]:border-border data-[active]:border-b-card data-[active]:bg-card data-[active]:font-bold data-[active]:text-foreground data-[active]:no-underline [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}

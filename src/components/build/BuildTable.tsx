@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { Plus, RefreshCw, X } from 'lucide-react'
 import { byId, slotMeta, type PartBase, type Slot } from '@/data/ingredients'
 import type { Issue } from '@/lib/compat'
@@ -26,11 +25,11 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
   }
 
   return (
-    <div className={cn('overflow-hidden rounded-2xl border border-border bg-card shadow-card', className)}>
+    <div className={cn('border border-border bg-card', className)}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
-            <tr className="[&>th]:px-4 [&>th]:py-2.5 [&>th]:text-left [&>th]:font-medium">
+        <table className="w-full min-w-[640px] text-[12px]">
+          <thead className="bg-secondary text-[11px]">
+            <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-bold">
               <th className="w-36">Component</th>
               <th>Selection</th>
               <th className="w-16 text-right!">kcal</th>
@@ -49,8 +48,7 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
               )
             })}
 
-            <AnimatePresence initial={false}>
-              {bowl.toppings.map((t, i) => (
+            {bowl.toppings.map((t, i) => (
                 <Row
                   key={t.key}
                   slot="topping"
@@ -59,16 +57,14 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
                   part={byId.topping[t.toppingId]}
                   onChoose={() => setPicker('topping')}
                   onRemove={() => removeTopping(t.key)}
-                  animated
                 />
               ))}
-            </AnimatePresence>
 
             <tr className="border-t border-border/60">
-              <td className="px-4 py-3 align-top">
+              <td className="px-2 py-1.5 align-top">
                 {bowl.toppings.length === 0 && <SlotLabel slot="topping" />}
               </td>
-              <td colSpan={6} className="px-4 py-3">
+              <td colSpan={6} className="px-2 py-1.5">
                 <Button variant="outline" size="sm" onClick={() => setPicker('topping')} disabled={bowl.toppings.length >= MAX_TOPPINGS}>
                   <Plus /> {bowl.toppings.length ? 'Add another topping' : 'Choose toppings'}
                 </Button>
@@ -106,7 +102,7 @@ function SlotLabel({ slot }: { slot: Slot }) {
         {meta.label}
         {meta.required && <span className="ml-1 text-primary" title="Required">*</span>}
       </div>
-      <div className="font-serif text-xs text-muted-foreground">{meta.jp}</div>
+      <div className="text-[10px] text-muted-foreground">{meta.jp}</div>
     </div>
   )
 }
@@ -118,7 +114,6 @@ function Row({
   part,
   onChoose,
   onRemove,
-  animated,
 }: {
   slot: Slot
   label?: string
@@ -126,31 +121,25 @@ function Row({
   part: PartBase | null
   onChoose: () => void
   onRemove?: () => void
-  animated?: boolean
 }) {
-  const Tr = animated ? motion.tr : 'tr'
-  const motionProps = animated
-    ? { layout: true, initial: { opacity: 0, backgroundColor: 'oklch(0.66 0.19 35 / 25%)' }, animate: { opacity: 1, backgroundColor: 'oklch(0.66 0.19 35 / 0%)' }, exit: { opacity: 0 }, transition: { duration: 0.35 } }
-    : {}
   return (
-    <Tr
-      {...motionProps}
+    <tr
       className={cn(
         'border-t border-border/60 border-l-2 border-l-transparent',
-        flag === 'error' && 'border-l-destructive bg-destructive/5',
-        flag === 'warn' && 'border-l-[oklch(0.78_0.15_85)] bg-accent/20',
+        flag === 'error' && 'border-l-destructive bg-[#fdecea]',
+        flag === 'warn' && 'border-l-[#d6c87a] bg-accent',
       )}
     >
-      <td className="px-4 py-3 align-top">{label === '' ? null : <SlotLabel slot={slot} />}</td>
+      <td className="px-2 py-1.5 align-top">{label === '' ? null : <SlotLabel slot={slot} />}</td>
       {part ? (
         <>
-          <td className="px-4 py-3">
+          <td className="px-2 py-1.5">
             <div className="flex items-center gap-3">
               <PartSwatch slot={slot} part={part} className="size-9 shrink-0" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="font-medium">{part.name}</span>
-                  {part.jp && <span className="font-serif text-xs text-muted-foreground">{part.jp}</span>}
+                  <span className="font-bold">{part.name}</span>
+                  {part.jp && <span className="text-[10px] text-muted-foreground">{part.jp}</span>}
                 </div>
                 <div className="mt-0.5 flex flex-wrap gap-1">
                   {part.tags.map((t) => (
@@ -160,11 +149,11 @@ function Row({
               </div>
             </div>
           </td>
-          <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{part.kcal}</td>
-          <td className="hidden px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap md:table-cell">{part.sodium}</td>
-          <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{fmtMinutes(part.minutes)}</td>
-          <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{fmtPrice(part.price)}</td>
-          <td className="px-2 py-3">
+          <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{part.kcal}</td>
+          <td className="hidden px-2 py-1.5 text-right tabular-nums whitespace-nowrap md:table-cell">{part.sodium}</td>
+          <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{fmtMinutes(part.minutes)}</td>
+          <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{fmtPrice(part.price)}</td>
+          <td className="px-1 py-1.5">
             <div className="flex justify-end gap-1">
               {slot !== 'topping' && (
                 <Button size="icon-sm" variant="ghost" aria-label={`Swap ${slotMeta[slot].label}`} onClick={onChoose} className="text-muted-foreground">
@@ -180,13 +169,13 @@ function Row({
           </td>
         </>
       ) : (
-        <td colSpan={6} className="px-4 py-3">
+        <td colSpan={6} className="px-2 py-1.5">
           <Button variant="outline" size="sm" onClick={onChoose}>
             <Plus /> Choose {slot === 'oil' ? 'an aroma oil' : slot === 'noodle' ? 'noodles' : `a ${slotMeta[slot].label.toLowerCase()}`}
           </Button>
           {!slotMeta[slot].required && <span className="ml-3 text-xs text-muted-foreground">Optional</span>}
         </td>
       )}
-    </Tr>
+    </tr>
   )
 }

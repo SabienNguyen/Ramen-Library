@@ -293,11 +293,14 @@ api.get('/home', async (c) => {
   const ids = recentBuilds.map((b) => b.id)
   const [counts, liked] = await Promise.all([countsFor(ids), likedSet(c.get('user')?.id, ids)])
   const recentThreads = await db.query.threads.findMany({ orderBy: [desc(threads.lastActivityAt)], limit: 5, with: { author: { columns: authorCols } } })
+  const threadIds = recentThreads.map((t) => t.id)
+  const replyRows = threadIds.length ? await db.select({ id: posts.threadId, n: count() }).from(posts).where(inArray(posts.threadId, threadIds)).groupBy(posts.threadId) : []
+  const replies = new Map(replyRows.map((r) => [r.id, r.n]))
   const topLike = await db.select({ id: buildLikes.buildId, n: count() }).from(buildLikes).groupBy(buildLikes.buildId).orderBy(sql`count(*) desc`).limit(1)
   return c.json({
     stats: { builds: buildCount[0].n, users: userCount[0].n, threads: threadCount[0].n },
     builds: recentBuilds.map((b) => ({ ...b, likeCount: counts.likes.get(b.id) ?? 0, commentCount: counts.comments.get(b.id) ?? 0, likedByMe: liked.has(b.id) })),
-    threads: recentThreads.map((t) => ({ ...t, body: t.body.slice(0, 160) })),
+    threads: recentThreads.map((t) => ({ ...t, body: t.body.slice(0, 160), replyCount: replies.get(t.id) ?? 0 })),
     topBuildId: topLike[0]?.id ?? null,
   })
 })

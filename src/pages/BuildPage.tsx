@@ -85,13 +85,13 @@ export function BuildPage() {
   for (const t of build.bowl.toppings) rows.push({ slot: 'topping', part: byId.topping[t.toppingId] })
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start">
-      <aside className="grid gap-4 lg:sticky lg:top-20">
-        <section className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+    <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
+      <aside className="grid gap-4 lg:sticky lg:top-4">
+        <section className="relative border border-border bg-card">
           <BuildCover build={build} variant="full" />
           {mine && (
             <Dialog open={coverOpen} onOpenChange={setCoverOpen}>
-              <DialogTrigger render={<Button size="sm" variant="outline" className="absolute right-3 bottom-3 shadow-card" />}>
+              <DialogTrigger render={<Button size="sm" variant="outline" className="absolute right-2 bottom-2" />}>
                 <Camera /> Change cover
               </DialogTrigger>
               <DialogContent className="max-w-lg">
@@ -114,16 +114,16 @@ export function BuildPage() {
           )}
         </section>
         {(build.imageUrl || (build.templateId && build.templateId !== 'live')) && (
-          <section className="grain flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-card">
+          <section className="flex items-center gap-3 border border-border bg-card p-2">
             <BowlCanvas bowl={build.bowl} className="w-28 shrink-0" />
-            <div className="text-xs text-muted-foreground">
-              <div className="font-semibold text-foreground">Parts render</div>
+            <div className="text-[11px] text-muted-foreground">
+              <div className="font-bold text-foreground">Parts render</div>
               Generated from the parts list.
             </div>
           </section>
         )}
         <Card>
-          <CardContent className="grid grid-cols-2 gap-3 p-4">
+          <CardContent className="grid grid-cols-2 gap-2 p-2">
             <Stat label="Price" value={fmtPrice(totals.price)} />
             <Stat label="Prep time" value={fmtMinutes(totals.minutes)} />
             <Stat label="Calories" value={`${totals.kcal} kcal`} />
@@ -135,7 +135,7 @@ export function BuildPage() {
                   <Flame key={i} className={cn('size-3', i < totals.spice ? 'fill-primary text-primary' : 'text-muted-foreground/40')} />
                 ))}
               </Badge>
-              <span className="ml-auto font-mono text-xs text-muted-foreground">
+              <span className="ml-auto text-[11px] text-muted-foreground">
                 body {totals.bodyLoad}/{totals.bodyCapacity}
               </span>
             </div>
@@ -147,8 +147,8 @@ export function BuildPage() {
         <div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="font-serif text-4xl leading-none">{build.name}</h1>
-              <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+              <h1 className="text-[18px] font-bold">{build.name}</h1>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <Link to={`/u/${build.author.id}`} className="flex items-center gap-1.5 hover:text-foreground">
                   <Avatar name={build.author.name} image={build.author.image} className="size-6 text-[10px]" />
                   {build.author.name}
@@ -179,13 +179,13 @@ export function BuildPage() {
               )}
             </div>
           </div>
-          {build.description && <p className="mt-4 max-w-prose text-sm leading-relaxed whitespace-pre-wrap">{build.description}</p>}
+          {build.description && <p className="mt-3 max-w-prose text-[12px] leading-relaxed whitespace-pre-wrap">{build.description}</p>}
         </div>
 
-        <section className="overflow-hidden rounded-xl border border-border bg-card/60">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs text-muted-foreground">
-              <tr className="[&>th]:px-4 [&>th]:py-2 [&>th]:text-left [&>th]:font-medium">
+        <section className="border border-border bg-card">
+          <table className="w-full text-[12px]">
+            <thead className="bg-secondary text-[11px]">
+              <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-bold">
                 <th className="w-28">Component</th>
                 <th>Part</th>
                 <th className="text-right!">kcal</th>
@@ -196,13 +196,13 @@ export function BuildPage() {
             <tbody>
               {rows.map(({ slot, part }, i) => (
                 <tr key={`${slot}-${i}`} className="border-t border-border/60">
-                  <td className="px-4 py-2.5 text-xs text-muted-foreground">{i > 0 && rows[i - 1].slot === slot ? '' : slotMeta[slot].label}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-2 py-1.5 text-xs text-muted-foreground">{i > 0 && rows[i - 1].slot === slot ? '' : slotMeta[slot].label}</td>
+                  <td className="px-2 py-1.5">
                     <div className="flex items-center gap-3">
                       <PartSwatch slot={slot} part={part} className="size-8 shrink-0" />
                       <div className="min-w-0">
-                        <span className="font-medium">{part.name}</span>
-                        {part.jp && <span className="ml-2 font-serif text-xs text-muted-foreground">{part.jp}</span>}
+                        <span className="font-bold">{part.name}</span>
+                        {part.jp && <span className="ml-1 text-[10px] text-muted-foreground">{part.jp}</span>}
                         <div className="mt-0.5 flex flex-wrap gap-1">
                           {part.tags.map((t) => (
                             <TagBadge key={t} tag={t} />
@@ -211,9 +211,9 @@ export function BuildPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">{part.kcal}</td>
-                  <td className="hidden px-4 py-2.5 text-right font-mono tabular-nums whitespace-nowrap md:table-cell">{fmtMinutes(part.minutes)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">{fmtPrice(part.price)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{part.kcal}</td>
+                  <td className="hidden px-2 py-1.5 text-right tabular-nums whitespace-nowrap md:table-cell">{fmtMinutes(part.minutes)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(part.price)}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
@@ -229,16 +229,16 @@ export function BuildPage() {
 
         {issues.length > 0 && (
           <section>
-            <h2 className="mb-2 font-mono text-[11px] tracking-widest text-muted-foreground uppercase">Compatibility notes</h2>
+            <h2 className="mb-1 text-[12px] font-bold">Compatibility notes</h2>
             <ul className="grid gap-1.5">
               {issues.map((i) => (
                 <li
                   key={i.message}
                   className={cn(
-                    'flex gap-2 rounded-md border px-2.5 py-2 text-xs leading-snug',
-                    i.level === 'error' && 'border-destructive/40 bg-destructive/10',
-                    i.level === 'warn' && 'border-accent bg-accent/30',
-                    i.level === 'note' && 'border-border bg-secondary/40 text-muted-foreground',
+                    'flex gap-2 border px-2 py-1.5 text-[11px] leading-snug',
+                    i.level === 'error' && 'border-[#e0a0a0] bg-[#fdecea]',
+                    i.level === 'warn' && 'border-[#d6c87a] bg-accent',
+                    i.level === 'note' && 'border-border bg-muted text-muted-foreground',
                   )}
                 >
                   {i.level === 'error' ? <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : i.level === 'warn' ? <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-accent-foreground" /> : <Info className="mt-0.5 size-3.5 shrink-0" />}
@@ -250,9 +250,7 @@ export function BuildPage() {
         )}
 
         <section>
-          <h2 className="mb-3 font-serif text-2xl">
-            Comments <span className="font-sans text-sm text-muted-foreground">{build.comments.length}</span>
-          </h2>
+          <h2 className="mb-2 border-b border-border pb-1 text-[14px] font-bold">Comments ({build.comments.length})</h2>
           <Discussion items={build.comments} postTo={`/builds/${build.id}/comments`} deletePath={(id) => `/comments/${id}`} placeholder="Write a comment" next={`/builds/${build.id}`} />
         </section>
       </div>
@@ -262,9 +260,9 @@ export function BuildPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-background/40 px-3 py-2">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="font-mono text-sm tabular-nums">{value}</div>
+    <div className="border border-border px-2 py-1">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="text-[12px] tabular-nums">{value}</div>
     </div>
   )
 }

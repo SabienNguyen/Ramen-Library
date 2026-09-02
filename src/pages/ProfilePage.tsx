@@ -26,26 +26,26 @@ export function ProfilePage() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center gap-4">
-        <Avatar name={profile.name} image={profile.image} className="size-16 text-xl" />
+        <Avatar name={profile.name} image={profile.image} className="size-16 text-[16px]" />
         <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-4xl leading-none">{profile.name}</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <h1 className="text-[18px] font-bold">{profile.name}</h1>
+          <p className="text-[11px] text-muted-foreground">
             Joined {new Date(profile.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} · {builds.length} build{builds.length === 1 ? '' : 's'} · {threads.length} thread
             {threads.length === 1 ? '' : 's'} · {postCount} repl{postCount === 1 ? 'y' : 'ies'}
           </p>
-          {profile.bio && <p className="mt-2 max-w-prose text-sm whitespace-pre-wrap">{profile.bio}</p>}
+          {profile.bio && <p className="mt-1 max-w-prose text-[12px] whitespace-pre-wrap">{profile.bio}</p>}
         </div>
         {me && (
-          <Link to="/settings" className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+          <Link to="/settings" className="text-[11px]">
             Edit profile
           </Link>
         )}
       </div>
 
       <section>
-        <h2 className="mb-3 font-serif text-2xl">Builds</h2>
+        <h2 className="mb-2 border-b border-border pb-1 text-[14px] font-bold">Builds</h2>
         {builds.length ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {builds.map((b) => (
               <BuildCard key={b.id} build={b} />
             ))}
@@ -57,15 +57,15 @@ export function ProfilePage() {
 
       {threads.length > 0 && (
         <section>
-          <h2 className="mb-3 font-serif text-2xl">Threads</h2>
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-card shadow-card">
+          <h2 className="mb-2 border-b border-border pb-1 text-[14px] font-bold">Threads</h2>
+          <ul className="divide-y divide-border border border-border bg-card">
             {threads.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+              <li key={t.id} className="flex items-center gap-2 px-2 py-1.5 text-[12px]">
                 <CategoryChip id={t.category} />
                 <Link to={`/forum/${t.id}`} className="min-w-0 flex-1 truncate hover:underline">
                   {t.title}
                 </Link>
-                <span className="text-xs text-muted-foreground">{timeAgo(t.createdAt)}</span>
+                <span className="text-[11px] text-muted-foreground">{timeAgo(t.createdAt)}</span>
               </li>
             ))}
           </ul>
@@ -112,24 +112,24 @@ export function SettingsPage() {
       <PageHeader title="Settings" />
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Profile</CardTitle>
+          <CardTitle>Profile</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="grid gap-4">
-            <label className="grid gap-1.5 text-sm">
-              <span className="text-xs font-medium text-muted-foreground">Display name</span>
+            <label className="grid gap-1 text-[12px]">
+              <span className="font-bold">Display name</span>
               <Input value={curName} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={40} required />
             </label>
-            <label className="grid gap-1.5 text-sm">
-              <span className="text-xs font-medium text-muted-foreground">Bio</span>
+            <label className="grid gap-1 text-[12px]">
+              <span className="font-bold">Bio</span>
               <Textarea value={curBio} onChange={(e) => setBio(e.target.value)} maxLength={300} placeholder="A line about you" />
             </label>
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={busy}>
                 Save
               </Button>
-              {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
-              <span className="ml-auto text-xs text-muted-foreground">{user.email}</span>
+              {msg && <span className="text-[11px] text-muted-foreground">{msg}</span>}
+              <span className="ml-auto text-[11px] text-muted-foreground">{user.email}</span>
             </div>
           </form>
         </CardContent>

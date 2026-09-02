@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { AnimatePresence, motion } from 'motion/react'
 import { AlertTriangle, BookmarkPlus, Check, CircleAlert, Eraser, Flame, Info, Link2, Shuffle, Upload } from 'lucide-react'
 import { api, uploadPhoto } from '@/lib/api'
 import { CoverPicker, defaultCover, type CoverChoice } from './CoverPicker'
@@ -33,10 +32,10 @@ export function CompatBar({ issues, className }: { issues: Issue[]; className?: 
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm',
-        tone === 'ok' && 'border-scallion/30 bg-scallion/10 text-scallion',
-        tone === 'warn' && 'border-accent bg-accent/40 text-accent-foreground',
-        tone === 'error' && 'border-destructive/40 bg-destructive/10 text-destructive',
+        'flex items-center gap-2 border px-2 py-1.5 text-[12px]',
+        tone === 'ok' && 'border-[#a5d6a7] bg-[#eef7ee] text-scallion',
+        tone === 'warn' && 'border-[#d6c87a] bg-accent text-accent-foreground',
+        tone === 'error' && 'border-[#e0a0a0] bg-[#fdecea] text-destructive',
         className,
       )}
       role="status"
@@ -114,12 +113,8 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
   return (
     <Card className={cn('flex flex-col', className)}>
       <CardHeader>
-        <CardDescription className="text-xs font-semibold">Summary</CardDescription>
-        <AnimatePresence mode="wait">
-          <motion.div key={suggested} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
-            <CardTitle className="text-3xl">{suggested}</CardTitle>
-          </motion.div>
-        </AnimatePresence>
+        <CardDescription>Summary</CardDescription>
+        <CardTitle>{suggested}</CardTitle>
         <div className="mt-1 flex flex-wrap gap-1.5">
           <Badge variant={totals.diet === 'omnivore' ? 'outline' : 'scallion'}>{totals.diet === 'vegan' ? 'Vegan' : totals.diet === 'vegetarian' ? 'Vegetarian' : 'Omnivore'}</Badge>
           <Badge variant="outline" className="gap-0.5">
@@ -146,8 +141,8 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
               {totals.bodyLoad} / {totals.bodyCapacity}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <motion.div className={cn('h-full rounded-full', bodyTone)} animate={{ width: `${bodyPct}%` }} transition={{ type: 'spring', stiffness: 200, damping: 25 }} />
+          <div className="h-2 border border-border bg-muted">
+            <div className={cn('h-full', bodyTone)} style={{ width: `${bodyPct}%` }} />
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">How much topping weight the broth can carry.</p>
         </div>
@@ -155,26 +150,20 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
         <div>
           <div className="mb-1.5 text-xs font-medium text-muted-foreground">Compatibility notes</div>
           <ul className="grid gap-1.5">
-            <AnimatePresence initial={false}>
-              {issues.map((i) => (
-                <motion.li
+            {issues.map((i) => (
+                <li
                   key={i.message}
-                  layout
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 6 }}
                   className={cn(
-                    'flex gap-2 rounded-md border px-2.5 py-2 text-xs leading-snug',
-                    i.level === 'error' && 'border-destructive/40 bg-destructive/10',
-                    i.level === 'warn' && 'border-accent bg-accent/30',
-                    i.level === 'note' && 'border-border bg-secondary/40 text-muted-foreground',
+                    'flex gap-2 border px-2 py-1.5 text-[11px] leading-snug',
+                    i.level === 'error' && 'border-[#e0a0a0] bg-[#fdecea]',
+                    i.level === 'warn' && 'border-[#d6c87a] bg-accent',
+                    i.level === 'note' && 'border-border bg-muted text-muted-foreground',
                   )}
                 >
                   {i.level === 'error' ? <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-destructive" /> : i.level === 'warn' ? <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-accent-foreground" /> : <Info className="mt-0.5 size-3.5 shrink-0" />}
                   <span>{i.message}</span>
-                </motion.li>
+                </li>
               ))}
-            </AnimatePresence>
             {issues.length === 0 && <li className="text-xs text-muted-foreground">No issues.</li>}
           </ul>
         </div>
@@ -184,7 +173,6 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
             <DialogTrigger
               render={
                 <Button
-                  size="lg"
                   disabled={!totals.complete}
                   onClick={(e) => {
                     if (!session) {
@@ -278,9 +266,9 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
 
 function Stat({ label, value, big, warn }: { label: string; value: string; big?: boolean; warn?: boolean }) {
   return (
-    <div className="rounded-xl border border-border bg-secondary/60 px-3 py-2">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className={cn('font-mono tabular-nums', big ? 'text-xl' : 'text-sm', warn && 'text-accent')}>{value}</div>
+    <div className="border border-border px-2 py-1">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className={cn('tabular-nums', big ? 'text-[14px] font-bold' : 'text-[12px]', warn && 'text-destructive')}>{value}</div>
     </div>
   )
 }

@@ -52,38 +52,36 @@ export function PartPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl gap-3 p-0">
-        <DialogHeader className="px-6 pt-6">
+      <DialogContent className="max-w-3xl gap-2 p-0">
+        <DialogHeader className="px-3 pt-3">
           <DialogTitle>
             Choose {meta.multiple ? 'a topping' : slot === 'noodle' ? 'noodles' : slot === 'oil' ? 'an aroma oil' : `a ${meta.label.toLowerCase()}`}{' '}
-            <span className="text-muted-foreground italic">{meta.jp}</span>
+            
           </DialogTitle>
           <DialogDescription>{meta.blurb}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap items-center gap-2 px-6">
+        <div className="flex flex-wrap items-center gap-2 px-3">
           <div className="relative min-w-40 flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input autoFocus placeholder="Search parts…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-8" />
           </div>
-          <div className="flex gap-1 rounded-md bg-muted/70 p-1">
-            {DIET_FILTERS.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                onClick={() => setDiet(d.id)}
-                className={cn('rounded px-2.5 py-1 text-xs font-medium transition-colors', diet === d.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}
-              >
-                {d.label}
-              </button>
+          <div className="flex text-[11px]">
+            {DIET_FILTERS.map((d, i) => (
+              <span key={d.id} className="flex items-center">
+                {i > 0 && <span className="px-1 text-muted-foreground">|</span>}
+                <button type="button" onClick={() => setDiet(d.id)} className={cn(diet === d.id ? 'font-bold text-foreground' : 'text-primary hover:underline')}>
+                  {d.label}
+                </button>
+              </span>
             ))}
           </div>
         </div>
 
         <div className="max-h-[60vh] overflow-auto border-t border-border">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-popover text-xs text-muted-foreground">
-              <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium">
+          <table className="w-full text-[12px]">
+            <thead className="sticky top-0 z-10 bg-secondary text-[11px]">
+              <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:font-bold">
                 <th className="text-left">
                   <SortButton label="Part" active={sort.key === 'name'} dir={sort.dir} onClick={() => toggleSort('name')} />
                 </th>
@@ -109,7 +107,7 @@ export function PartPickerDialog({
                 return (
                   <tr
                     key={p.id}
-                    className={cn('border-t border-border/60 transition-colors hover:bg-secondary/40 [&>td]:px-3 [&>td]:py-2.5', selected && 'bg-primary/10')}
+                    className={cn('border-t border-border hover:bg-muted [&>td]:px-2 [&>td]:py-1.5', selected && 'bg-accent')}
                     onDoubleClick={() => onPick(p.id)}
                   >
                     <td>
@@ -117,10 +115,10 @@ export function PartPickerDialog({
                         <PartSwatch slot={slot} part={p} className="size-9 shrink-0" />
                         <div className="min-w-0">
                           <div className="flex items-baseline gap-2">
-                            <span className="font-medium">{p.name}</span>
-                            {p.jp && <span className="font-serif text-xs text-muted-foreground">{p.jp}</span>}
+                            <span className="font-bold">{p.name}</span>
+                            {p.jp && <span className="text-[10px] text-muted-foreground">{p.jp}</span>}
                           </div>
-                          <p className="line-clamp-1 max-w-72 text-xs text-muted-foreground">{p.note}</p>
+                          <p className="line-clamp-1 max-w-72 text-[11px] text-muted-foreground">{p.note}</p>
                         </div>
                       </div>
                     </td>
@@ -131,10 +129,10 @@ export function PartPickerDialog({
                         ))}
                       </div>
                     </td>
-                    <td className="text-right font-mono tabular-nums whitespace-nowrap">{p.kcal}</td>
-                    <td className="hidden text-right font-mono tabular-nums whitespace-nowrap md:table-cell">{p.sodium}</td>
-                    <td className="text-right font-mono tabular-nums whitespace-nowrap">{fmtMinutes(p.minutes)}</td>
-                    <td className="text-right font-mono tabular-nums whitespace-nowrap">{fmtPrice(p.price)}</td>
+                    <td className="text-right tabular-nums whitespace-nowrap">{p.kcal}</td>
+                    <td className="hidden text-right tabular-nums whitespace-nowrap md:table-cell">{p.sodium}</td>
+                    <td className="text-right tabular-nums whitespace-nowrap">{fmtMinutes(p.minutes)}</td>
+                    <td className="text-right tabular-nums whitespace-nowrap">{fmtPrice(p.price)}</td>
                     <td className="text-right">
                       <Button size="sm" variant={selected ? 'secondary' : 'default'} onClick={() => onPick(p.id)}>
                         {meta.multiple ? 'Add' : selected ? 'Selected' : 'Select'}
@@ -161,7 +159,7 @@ export function PartPickerDialog({
 function SortButton({ label, active, dir, onClick, align = 'left' }: { label: string; active: boolean; dir: 1 | -1; onClick: () => void; align?: 'left' | 'right' }) {
   const Icon = active ? (dir === 1 ? ArrowUp : ArrowDown) : ArrowUpDown
   return (
-    <button type="button" onClick={onClick} className={cn('inline-flex items-center gap-1 hover:text-foreground', active && 'text-foreground', align === 'right' && 'flex-row-reverse')}>
+    <button type="button" onClick={onClick} className={cn('inline-flex items-center gap-1 text-primary hover:underline', active && 'font-bold text-foreground', align === 'right' && 'flex-row-reverse')}>
       {label}
       <Icon className="size-3" />
     </button>
@@ -171,7 +169,7 @@ function SortButton({ label, active, dir, onClick, align = 'left' }: { label: st
 export function TagBadge({ tag }: { tag: Tag }) {
   const variant = tag === 'vegan' || tag === 'vegetarian' ? 'scallion' : tag === 'spicy' ? 'default' : 'outline'
   return (
-    <Badge variant={variant} className="px-1.5 py-0 text-[10px]">
+    <Badge variant={variant}>
       {tagLabel[tag]}
     </Badge>
   )

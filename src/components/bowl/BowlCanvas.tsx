@@ -150,7 +150,6 @@ export function BowlCanvas({ bowl, interactive = false, className }: Props) {
           <ellipse cx={CX - 40} cy={CY - 36} rx={70} ry={22} fill="white" opacity={sheen} filter={`url(#${gradientId}-blur)`} />
         </g>
 
-        {interactive && broth && <Steam />}
       </svg>
 
       {/* toppings layer */}
@@ -193,7 +192,6 @@ function PlacedToppingView({
       drag={interactive}
       dragMomentum={false}
       whileDrag={{ scale: 1.12, zIndex: 10 }}
-      whileHover={interactive ? { scale: 1.06 } : undefined}
       onDragStart={() => {
         dragged.current = false
       }}
@@ -226,32 +224,6 @@ function PlacedToppingView({
   )
 }
 
-
-function Steam() {
-  const wisps = [
-    { x: 150, d: 0 },
-    { x: 200, d: 0.9 },
-    { x: 250, d: 1.7 },
-  ]
-  return (
-    <g>
-      {wisps.map((w, i) => (
-        <motion.path
-          key={i}
-          d={`M ${w.x} 120 c -14 -18 14 -30 0 -50 c -12 -16 10 -26 0 -44`}
-          fill="none"
-          stroke="#a8977f"
-          strokeWidth="6"
-          strokeLinecap="round"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: [0, 0.35, 0], y: [20, -30] }}
-          transition={{ duration: 3.2, delay: w.d, repeat: Infinity, ease: 'easeOut' }}
-          style={{ filter: 'blur(3px)' }}
-        />
-      ))}
-    </g>
-  )
-}
 
 /** Keep a topping inside the broth ellipse (slightly inset). */
 function clampToBroth(x: number, y: number) {

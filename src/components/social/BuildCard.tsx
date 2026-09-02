@@ -1,47 +1,32 @@
 import { Link } from 'react-router'
-import { Heart, MessageCircle } from 'lucide-react'
 import { byId } from '@/data/ingredients'
 import { timeAgo, type BuildItem } from '@/lib/api'
 import { computeTotals, fmtPrice } from '@/lib/totals'
 import { cn } from '@/lib/utils'
-import { Avatar } from '@/components/ui/avatar'
-import { Card } from '@/components/ui/card'
 import { BuildCover } from '@/components/build/CoverArt'
 
 export function BuildCard({ build, className }: { build: BuildItem; className?: string }) {
   const totals = computeTotals(build.bowl)
   const partLine = [build.bowl.tareId && byId.tare[build.bowl.tareId]?.name, build.bowl.brothId && byId.broth[build.bowl.brothId]?.name, build.bowl.noodleId && byId.noodle[build.bowl.noodleId]?.name]
     .filter(Boolean)
-    .join(' · ')
+    .join(', ')
   return (
-    <Card className={cn('group overflow-hidden transition-[border-color,box-shadow] hover:border-primary/40 hover:shadow-[0_12px_32px_-16px_oklch(0.3_0.03_50/35%)]', className)}>
-      <Link to={`/builds/${build.id}`} className="block">
-        <div className="overflow-hidden">
-          <BuildCover build={build} className="transition-transform duration-300 group-hover:scale-[1.03]" />
-        </div>
-        <div className="px-4 pt-3 pb-2">
-          <h3 className="truncate font-serif text-xl leading-tight">{build.name}</h3>
-          <p className="truncate font-mono text-[11px] text-muted-foreground">{partLine || 'Empty build'}</p>
-        </div>
+    <div className={cn('border border-border bg-card', className)}>
+      <Link to={`/builds/${build.id}`} className="block border-b border-border">
+        <BuildCover build={build} />
       </Link>
-      <div className="grid gap-1.5 px-4 pb-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Link to={`/u/${build.author.id}`} className="flex min-w-0 items-center gap-1.5 hover:text-foreground">
-            <Avatar name={build.author.name} image={build.author.image} className="size-5 text-[9px]" />
-            <span className="truncate">{build.author.name}</span>
-          </Link>
-          <span className="shrink-0 whitespace-nowrap">· {timeAgo(build.createdAt)}</span>
+      <div className="px-2 py-1.5 text-[11px]">
+        <Link to={`/builds/${build.id}`} className="text-[13px] font-bold">
+          {build.name}
+        </Link>
+        <div className="text-muted-foreground">{partLine || 'Empty build'}</div>
+        <div className="mt-1">
+          by <Link to={`/u/${build.author.id}`}>{build.author.name}</Link> <span className="text-muted-foreground">· {timeAgo(build.createdAt)}</span>
         </div>
-        <div className="flex items-center gap-3 font-mono tabular-nums">
-          <span className="text-foreground">{fmtPrice(totals.price)}</span>
-          <span className={cn('flex items-center gap-1', build.likedByMe && 'text-primary')}>
-            <Heart className={cn('size-3.5', build.likedByMe && 'fill-primary')} /> {build.likeCount}
-          </span>
-          <span className="flex items-center gap-1">
-            <MessageCircle className="size-3.5" /> {build.commentCount}
-          </span>
+        <div className="text-muted-foreground">
+          {fmtPrice(totals.price)} · {build.likeCount} like{build.likeCount === 1 ? '' : 's'} · {build.commentCount} comment{build.commentCount === 1 ? '' : 's'}
         </div>
       </div>
-    </Card>
+    </div>
   )
 }

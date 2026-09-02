@@ -3,25 +3,24 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-[color,background-color,box-shadow,transform] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+  "inline-flex items-center justify-center gap-1 whitespace-nowrap border text-[12px] leading-none outline-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-1 focus-visible:outline-dotted focus-visible:outline-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default:
-          'bg-primary text-primary-foreground shadow-[0_6px_16px_-8px_var(--primary)] hover:brightness-105',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-border/70',
-        outline: 'border border-input bg-card hover:bg-secondary',
-        ghost: 'hover:bg-secondary',
-        accent: 'bg-accent text-accent-foreground hover:brightness-105',
-        destructive: 'bg-destructive text-white hover:brightness-110',
-        link: 'text-primary underline-offset-4 hover:underline',
+        default: 'border-[#888] bg-[#e6e6e6] font-bold text-foreground hover:bg-[#d9d9d9] active:bg-[#cccccc]',
+        secondary: 'border-[#aaa] bg-[#f2f2f2] text-foreground hover:bg-[#e6e6e6]',
+        outline: 'border-[#aaa] bg-white text-foreground hover:bg-[#f2f2f2]',
+        ghost: 'border-transparent bg-transparent text-primary hover:underline',
+        accent: 'border-[#888] bg-[#e6e6e6] font-bold text-foreground hover:bg-[#d9d9d9]',
+        destructive: 'border-[#aaa] bg-white text-destructive hover:bg-[#fdecea]',
+        link: 'border-0 bg-transparent p-0 text-primary underline',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 px-3.5 text-xs',
-        lg: 'h-11 px-6 text-base',
-        icon: 'size-9',
-        'icon-sm': 'size-8',
+        default: 'h-7 px-2.5',
+        sm: 'h-6 px-2 text-[11px]',
+        lg: 'h-8 px-3 text-[13px]',
+        icon: 'size-7',
+        'icon-sm': 'size-6',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

@@ -13,8 +13,8 @@ function useNext() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="grid gap-1.5 text-sm">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    <label className="grid gap-1 text-[12px]">
+      <span className="font-bold">{label}</span>
       {children}
     </label>
   )
@@ -39,7 +39,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell title="Sign in">
+    <AuthShell title="Log in">
       <form onSubmit={submit} className="grid gap-4">
         <Field label="Email">
           <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -47,14 +47,14 @@ export function LoginPage() {
         <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-[11px] text-destructive">{error}</p>}
         <Button type="submit" disabled={busy}>
-          Sign in
+          Log in
         </Button>
-        <p className="text-center text-xs text-muted-foreground">
-          New here?{' '}
-          <Link to={`/signup?next=${encodeURIComponent(next)}`} className="text-foreground underline underline-offset-4">
-            Create an account
+        <p className="text-center text-[11px] text-muted-foreground">
+          No account?{' '}
+          <Link to={`/signup?next=${encodeURIComponent(next)}`}>
+            Register
           </Link>
         </p>
       </form>
@@ -82,7 +82,7 @@ export function SignupPage() {
   }
 
   return (
-    <AuthShell title="Create account">
+    <AuthShell title="Register">
       <form onSubmit={submit} className="grid gap-4">
         <Field label="Display name">
           <Input autoComplete="nickname" required minLength={2} maxLength={40} value={name} onChange={(e) => setName(e.target.value)}  />
@@ -93,14 +93,14 @@ export function SignupPage() {
         <Field label="Password">
           <Input type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
         </Field>
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-[11px] text-destructive">{error}</p>}
         <Button type="submit" disabled={busy}>
-          Create account
+          Register
         </Button>
-        <p className="text-center text-xs text-muted-foreground">
-          Already have one?{' '}
-          <Link to={`/login?next=${encodeURIComponent(next)}`} className="text-foreground underline underline-offset-4">
-            Sign in
+        <p className="text-center text-[11px] text-muted-foreground">
+          Already registered?{' '}
+          <Link to={`/login?next=${encodeURIComponent(next)}`}>
+            Log in
           </Link>
         </p>
       </form>
@@ -110,10 +110,10 @@ export function SignupPage() {
 
 function AuthShell({ title, blurb, children }: { title: string; blurb?: string; children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-sm py-10">
+    <div className="mx-auto max-w-sm py-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl">{title}</CardTitle>
+          <CardTitle>{title}</CardTitle>
           {blurb && <CardDescription>{blurb}</CardDescription>}
         </CardHeader>
         <CardContent>{children}</CardContent>

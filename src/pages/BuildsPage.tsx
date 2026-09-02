@@ -1,5 +1,4 @@
 import { Link, useLoaderData, useSearchParams } from 'react-router'
-import { Hammer } from 'lucide-react'
 import type { BuildItem } from '@/lib/api'
 import { buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,13 +23,13 @@ export function BuildsPage() {
               </TabsList>
             </Tabs>
             <Link to="/build" className={buttonVariants({ size: 'sm' })}>
-              <Hammer /> New build
+              New build
             </Link>
           </div>
         }
       />
       {items.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((b) => (
             <BuildCard key={b.id} build={b} />
           ))}
