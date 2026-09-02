@@ -27,7 +27,7 @@ export function checkCompatibility(bowl: Bowl): Issue[] {
   // Required slots
   for (const slot of ['broth', 'tare', 'noodle'] as const) {
     const filled = slot === 'broth' ? broth : slot === 'tare' ? tare : noodle
-    if (!filled) issues.push({ level: 'note', message: `No ${slotMeta[slot].label.toLowerCase()} selected. The build isn't a bowl yet.`, slots: [slot] })
+    if (!filled) issues.push({ level: 'note', message: `No ${slotMeta[slot].label.toLowerCase()} selected.`, slots: [slot] })
   }
 
   // Body budget — the wattage check

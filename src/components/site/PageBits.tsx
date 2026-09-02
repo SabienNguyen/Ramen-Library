@@ -49,9 +49,9 @@ export function ErrorPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-3 text-center">
       <div className="font-mono text-xs tracking-widest text-muted-foreground uppercase">{status ?? 'Error'}</div>
-      <h1 className="font-serif text-4xl">{status === 404 ? 'Nothing in this bowl' : 'The kitchen caught fire'}</h1>
+      <h1 className="font-serif text-4xl">{status === 404 ? 'Not found' : 'Something went wrong'}</h1>
       <p className="text-sm text-muted-foreground">{message}</p>
-      <Button onClick={() => (window.location.href = '/')}>Back to the counter</Button>
+      <Button onClick={() => (window.location.href = '/')}>Home</Button>
     </div>
   )
 }

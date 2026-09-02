@@ -15,8 +15,6 @@ export function BuildsPage() {
     <div>
       <PageHeader
         title="Builds"
-        jp="みんなの丼"
-        blurb="Published bowls from the community. Like the good ones, argue in the comments."
         action={
           <div className="flex items-center gap-2">
             <Tabs value={sort} onValueChange={(v) => setParams(v === 'top' ? { sort: 'top' } : {})}>
@@ -38,7 +36,7 @@ export function BuildsPage() {
           ))}
         </div>
       ) : (
-        <Empty title="Nobody has published yet" blurb="Your bowl could be the first thing people see here." action={<Link to="/build" className={buttonVariants()}>Start a build</Link>} />
+        <Empty title="No builds yet" action={<Link to="/build" className={buttonVariants()}>Start a build</Link>} />
       )}
     </div>
   )

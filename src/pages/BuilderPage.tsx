@@ -28,9 +28,7 @@ export function BuilderPage() {
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="font-serif text-3xl">
-            Build sheet <span className="text-muted-foreground italic">組み立て</span>
-          </h1>
+          <h1 className="font-serif text-3xl">Build</h1>
           <Link to="/drafts" className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
             Drafts{draftCount ? ` (${draftCount})` : ''}
           </Link>
@@ -42,7 +40,7 @@ export function BuilderPage() {
       <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
         <section className="grain flex flex-col items-center rounded-2xl border border-border bg-card p-3 shadow-card">
           <BowlCanvas bowl={bowl} interactive className="max-w-[320px]" />
-          <p className="mt-1 text-center font-mono text-[10px] tracking-widest text-muted-foreground uppercase">Preview · drag toppings · tap to remove</p>
+          <p className="mt-1 text-center text-xs text-muted-foreground">Drag toppings to arrange. Tap one to remove it.</p>
         </section>
         <BuildSummary totals={totals} issues={issues} />
       </aside>

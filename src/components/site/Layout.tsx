@@ -20,9 +20,8 @@ export function Layout() {
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
           <Outlet />
         </main>
-        <footer className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-4 text-[11px] text-muted-foreground sm:px-6">
-          <span>Ramen Library · a friendly place to build bowls and argue about tare. Be kind, bring ratios.</span>
-          <span className="font-mono">React 19 · Tailwind v4 · Base UI · Motion · Hono · Better Auth · Drizzle</span>
+        <footer className="mx-auto w-full max-w-[1400px] border-t border-border px-4 py-4 text-xs text-muted-foreground sm:px-6">
+          Ramen Library
         </footer>
       </div>
     </TooltipProvider>
@@ -41,7 +40,7 @@ function Header() {
             <Soup className="size-4" />
           </span>
           <span className="font-serif text-xl leading-none">
-            Ramen Library <span className="hidden text-muted-foreground italic sm:inline">ラーメン</span>
+            Ramen Library
           </span>
         </Link>
 

@@ -72,7 +72,7 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
                 <Button variant="outline" size="sm" onClick={() => setPicker('topping')} disabled={bowl.toppings.length >= MAX_TOPPINGS}>
                   <Plus /> {bowl.toppings.length ? 'Add another topping' : 'Choose toppings'}
                 </Button>
-                {bowl.toppings.length >= MAX_TOPPINGS && <span className="ml-3 text-xs text-muted-foreground">Bowl is full.</span>}
+                {bowl.toppings.length >= MAX_TOPPINGS && <span className="ml-3 text-xs text-muted-foreground">Maximum reached.</span>}
               </td>
             </tr>
           </tbody>
@@ -182,7 +182,7 @@ function Row({
       ) : (
         <td colSpan={6} className="px-4 py-3">
           <Button variant="outline" size="sm" onClick={onChoose}>
-            <Plus /> Choose {slotMeta[slot].label === 'Aroma oil' ? 'an aroma oil' : `a ${slotMeta[slot].label.toLowerCase()}`}
+            <Plus /> Choose {slot === 'oil' ? 'an aroma oil' : slot === 'noodle' ? 'noodles' : `a ${slotMeta[slot].label.toLowerCase()}`}
           </Button>
           {!slotMeta[slot].required && <span className="ml-3 text-xs text-muted-foreground">Optional</span>}
         </td>

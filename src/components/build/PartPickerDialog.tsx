@@ -55,7 +55,7 @@ export function PartPickerDialog({
       <DialogContent className="max-w-3xl gap-3 p-0">
         <DialogHeader className="px-6 pt-6">
           <DialogTitle>
-            Choose {meta.multiple ? 'a topping' : `a ${meta.label.toLowerCase()}`}{' '}
+            Choose {meta.multiple ? 'a topping' : slot === 'noodle' ? 'noodles' : slot === 'oil' ? 'an aroma oil' : `a ${meta.label.toLowerCase()}`}{' '}
             <span className="text-muted-foreground italic">{meta.jp}</span>
           </DialogTitle>
           <DialogDescription>{meta.blurb}</DialogDescription>

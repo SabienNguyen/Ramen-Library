@@ -114,7 +114,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
   return (
     <Card className={cn('flex flex-col', className)}>
       <CardHeader>
-        <CardDescription className="font-mono text-[11px] tracking-widest uppercase">Build</CardDescription>
+        <CardDescription className="text-xs font-semibold">Summary</CardDescription>
         <AnimatePresence mode="wait">
           <motion.div key={suggested} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
             <CardTitle className="text-3xl">{suggested}</CardTitle>
@@ -149,7 +149,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <motion.div className={cn('h-full rounded-full', bodyTone)} animate={{ width: `${bodyPct}%` }} transition={{ type: 'spring', stiffness: 200, damping: 25 }} />
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">How much topping weight the broth can carry. Think wattage.</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">How much topping weight the broth can carry.</p>
         </div>
 
         <div>
@@ -175,7 +175,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
                 </motion.li>
               ))}
             </AnimatePresence>
-            {issues.length === 0 && <li className="text-xs text-muted-foreground italic">Clean build. Nothing to flag.</li>}
+            {issues.length === 0 && <li className="text-xs text-muted-foreground">No issues.</li>}
           </ul>
         </div>
 
@@ -200,7 +200,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Publish to the community</DialogTitle>
-                <DialogDescription>Name it, add a photo or pick a drawing, say a few words.</DialogDescription>
+                <DialogDescription>Add a name, a photo or drawing, and an optional description.</DialogDescription>
               </DialogHeader>
               <form onSubmit={onPublish} className="grid max-h-[70vh] gap-4 overflow-y-auto pr-1">
                 <Input autoFocus placeholder={suggested} value={pubName} onChange={(e) => setPubName(e.target.value)} maxLength={60} />
@@ -230,7 +230,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Save a draft</DialogTitle>
-                <DialogDescription>Drafts live in this browser only. Publish when it's ready for people.</DialogDescription>
+                <DialogDescription>Drafts are saved in this browser only.</DialogDescription>
               </DialogHeader>
               <form
                 onSubmit={(e) => {
@@ -258,7 +258,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
             <TooltipTrigger render={<Button variant="secondary" size="icon" onClick={randomize} aria-label="Random build" />}>
               <Shuffle />
             </TooltipTrigger>
-            <TooltipContent>Omakase — random build</TooltipContent>
+            <TooltipContent>Random build</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger render={<Button variant="secondary" size="icon" onClick={clearToppings} aria-label="Clear toppings" />}>

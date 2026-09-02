@@ -36,7 +36,7 @@ export function ForumPage() {
       </aside>
 
       <div>
-        <PageHeader title={category ? catLabel(category) : 'Forum'} jp="掲示板" blurb={category ? categoryBlurb(category) : 'Recipes, technique, regional beef. Keep it about the bowl, keep it kind.'} className="mb-4" />
+        <PageHeader title={category ? catLabel(category) : 'Forum'} blurb={category ? categoryBlurb(category) : undefined} className="mb-4" />
         {items.length ? (
           <ul className="grid gap-2">
             {items.map((t) => (
@@ -63,7 +63,7 @@ export function ForumPage() {
             ))}
           </ul>
         ) : (
-          <Empty title="No threads here yet" blurb="Every good forum started with one person talking to themselves." action={<Link to="/forum/new" className={buttonVariants({ variant: 'outline' })}>Start the first one</Link>} />
+          <Empty title="No threads yet" action={<Link to="/forum/new" className={buttonVariants({ variant: 'outline' })}>New thread</Link>} />
         )}
       </div>
     </div>
@@ -107,7 +107,7 @@ export function NewThreadPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="New thread" blurb="Pick a category, say the thing." />
+      <PageHeader title="New thread" />
       {isPending ? null : !session ? (
         <SignInPrompt what="start a thread" next="/forum/new" />
       ) : (
@@ -127,7 +127,7 @@ export function NewThreadPage() {
                 ))}
               </div>
               <Input placeholder="Title" required minLength={3} maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} className="h-11 font-serif text-lg" />
-              <Textarea placeholder="Body. Recipes, ratios, questions, hot takes." required className="min-h-48" value={body} onChange={(e) => setBody(e.target.value)} maxLength={10000} />
+              <Textarea placeholder="Body" required className="min-h-48" value={body} onChange={(e) => setBody(e.target.value)} maxLength={10000} />
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex gap-2">
                 <Button type="submit" disabled={busy}>
@@ -203,7 +203,7 @@ export function ThreadPage() {
           items={thread.posts}
           postTo={`/forum/threads/${thread.id}/posts`}
           deletePath={(id) => `/forum/posts/${id}`}
-          placeholder="Reply. Bring ratios."
+          placeholder="Write a reply"
           next={`/forum/${thread.id}`}
           noun="reply"
         />

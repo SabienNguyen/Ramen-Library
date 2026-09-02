@@ -76,7 +76,7 @@ export function CoverPicker({ bowl, name, value, onChange }: { bowl: Bowl; name?
             )}
           >
             <ImagePlus className="size-6 text-muted-foreground" />
-            <span className="text-sm font-semibold">Add a photo of your bowl</span>
+            <span className="text-sm font-semibold">Add a photo</span>
             <span className="text-xs text-muted-foreground">Drop it here or click. JPEG, PNG or WebP up to 8 MB.</span>
           </button>
         )}
@@ -84,7 +84,7 @@ export function CoverPicker({ bowl, name, value, onChange }: { bowl: Bowl; name?
       </div>
 
       <div>
-        <div className="mb-1.5 text-xs font-semibold text-muted-foreground">{hasPhoto ? 'Or use a drawing instead' : 'No photo yet? Pick a drawing'}</div>
+        <div className="mb-1.5 text-xs font-semibold text-muted-foreground">{hasPhoto ? 'Or use a drawing' : 'Drawing'}</div>
         <div className="grid grid-cols-5 gap-2">
           {COVER_TEMPLATES.map((t) => {
             const selected = !hasPhoto && value.templateId === t.id

@@ -39,7 +39,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell title="Welcome back" blurb="Sign in to publish builds and join the forum.">
+    <AuthShell title="Sign in">
       <form onSubmit={submit} className="grid gap-4">
         <Field label="Email">
           <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -82,10 +82,10 @@ export function SignupPage() {
   }
 
   return (
-    <AuthShell title="Pull up a stool" blurb="An account lets you publish builds, like, comment, and post in the forum.">
+    <AuthShell title="Create account">
       <form onSubmit={submit} className="grid gap-4">
         <Field label="Display name">
-          <Input autoComplete="nickname" required minLength={2} maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Noodle Goblin" />
+          <Input autoComplete="nickname" required minLength={2} maxLength={40} value={name} onChange={(e) => setName(e.target.value)}  />
         </Field>
         <Field label="Email">
           <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -108,13 +108,13 @@ export function SignupPage() {
   )
 }
 
-function AuthShell({ title, blurb, children }: { title: string; blurb: string; children: React.ReactNode }) {
+function AuthShell({ title, blurb, children }: { title: string; blurb?: string; children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-sm py-10">
       <Card>
         <CardHeader>
           <CardTitle className="text-3xl">{title}</CardTitle>
-          <CardDescription>{blurb}</CardDescription>
+          {blurb && <CardDescription>{blurb}</CardDescription>}
         </CardHeader>
         <CardContent>{children}</CardContent>
       </Card>

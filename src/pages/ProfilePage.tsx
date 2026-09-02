@@ -51,7 +51,7 @@ export function ProfilePage() {
             ))}
           </div>
         ) : (
-          <Empty title="No published builds" blurb={me ? 'Build something and hit Publish.' : 'Nothing on the counter yet.'} />
+          <Empty title="No published builds" />
         )}
       </section>
 
@@ -109,7 +109,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader title="Settings" blurb="How you show up on builds and in the forum." />
+      <PageHeader title="Settings" />
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Profile</CardTitle>
@@ -122,7 +122,7 @@ export function SettingsPage() {
             </label>
             <label className="grid gap-1.5 text-sm">
               <span className="text-xs font-medium text-muted-foreground">Bio</span>
-              <Textarea value={curBio} onChange={(e) => setBio(e.target.value)} maxLength={300} placeholder="Tonkotsu purist. Will fight about kansui." />
+              <Textarea value={curBio} onChange={(e) => setBio(e.target.value)} maxLength={300} placeholder="A line about you" />
             </label>
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={busy}>

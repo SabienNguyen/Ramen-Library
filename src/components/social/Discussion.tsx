@@ -85,7 +85,7 @@ export function Discussion({
             </motion.li>
           ))}
         </AnimatePresence>
-        {items.length === 0 && <li className="text-sm text-muted-foreground italic">No {noun}s yet. Be the first at the counter.</li>}
+        {items.length === 0 && <li className="text-sm text-muted-foreground">No {noun === 'reply' ? 'replies' : 'comments'} yet.</li>}
       </ul>
 
       {session ? (
@@ -98,7 +98,6 @@ export function Discussion({
                 Post {noun}
               </Button>
               {error && <span className="text-xs text-destructive">{error}</span>}
-              <span className="ml-auto font-mono text-[11px] text-muted-foreground">⌘/Ctrl + Enter to post</span>
             </div>
           </div>
         </form>

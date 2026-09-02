@@ -21,7 +21,7 @@ export function LibraryGrid({ onLoad }: { onLoad: () => void }) {
           <ChefHat className="size-6 text-muted-foreground" />
         </div>
         <h3 className="font-serif text-2xl">No saved builds yet</h3>
-        <p className="max-w-sm text-sm text-muted-foreground">Pick parts, hit “Save build”, and it shows up here as a card you can reload or riff on.</p>
+        <p className="max-w-sm text-sm text-muted-foreground">Drafts you save from the build page appear here.</p>
       </div>
     )
   }

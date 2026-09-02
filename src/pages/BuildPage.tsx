@@ -118,7 +118,7 @@ export function BuildPage() {
             <BowlCanvas bowl={build.bowl} className="w-28 shrink-0" />
             <div className="text-xs text-muted-foreground">
               <div className="font-semibold text-foreground">Parts render</div>
-              Drawn from the exact parts list, so you can compare it to the photo.
+              Generated from the parts list.
             </div>
           </section>
         )}
@@ -253,7 +253,7 @@ export function BuildPage() {
           <h2 className="mb-3 font-serif text-2xl">
             Comments <span className="font-sans text-sm text-muted-foreground">{build.comments.length}</span>
           </h2>
-          <Discussion items={build.comments} postTo={`/builds/${build.id}/comments`} deletePath={(id) => `/comments/${id}`} placeholder="Would you eat this? Say why." next={`/builds/${build.id}`} />
+          <Discussion items={build.comments} postTo={`/builds/${build.id}/comments`} deletePath={(id) => `/comments/${id}`} placeholder="Write a comment" next={`/builds/${build.id}`} />
         </section>
       </div>
     </div>

@@ -6,7 +6,7 @@ export function DraftsPage() {
   const navigate = useNavigate()
   return (
     <div>
-      <PageHeader title="Drafts" jp="下書き" blurb="Builds saved in this browser. Load one to keep working, or publish it from the build sheet." />
+      <PageHeader title="Drafts" blurb="Saved in this browser only." />
       <LibraryGrid onLoad={() => navigate('/build')} />
     </div>
   )
