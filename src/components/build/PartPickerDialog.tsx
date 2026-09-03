@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react'
-import { catalogue, slotMeta, tagLabel, type PartBase, type Slot, type Tag } from '@/data/ingredients'
+import { catalogue, slotMeta, tagLabel, type PartBase, type Slot, type Tag } from '../../../shared/ingredients'
 import { fmtMinutes, fmtPrice } from '@/lib/totals'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'

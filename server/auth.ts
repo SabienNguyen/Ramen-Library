@@ -1,13 +1,15 @@
 import { betterAuth } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from './db/client'
-import * as schema from './db/schema'
+import { sendVerificationEmail } from './email'
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:5173',
   secret: process.env.BETTER_AUTH_SECRET ?? 'dev-only-secret-change-me-please-32chars',
-  database: drizzleAdapter(db, { provider: 'sqlite', schema }),
+  database: { db, type: 'sqlite' },
   emailAndPassword: { enabled: true, minPasswordLength: 8 },
+  emailVerification: {
+    sendVerificationEmail,
+  },
   user: {
     additionalFields: {
       bio: { type: 'string', required: false, input: true },

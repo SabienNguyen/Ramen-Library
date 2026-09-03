@@ -1,0 +1,35 @@
+# Single-node Garage (S3-compatible object storage) config.
+# Docs: https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/
+#
+# rpc_secret below must be 32 bytes of hex (64 chars) — Garage refuses to
+# start otherwise. Generate your own per deployment:
+#   openssl rand -hex 32
+# and replace it (or set it via the GARAGE_RPC_SECRET env var instead, and
+# drop this line). The value committed here is only a placeholder generated
+# for this repo; treat it as public and rotate it before using this file
+# for anything beyond local testing.
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+
+# Single node, no redundancy: fine for one VPS. Increase only if you run
+# more than one Garage node.
+replication_factor = 1
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "caaa1ce739189b8efd9f9d35cce93e07434a9dbd28b52a57188ad7a8234eb219"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.garage.localhost"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage.localhost"
+index = "index.html"
+
+[admin]
+api_bind_addr = "[::]:3903"

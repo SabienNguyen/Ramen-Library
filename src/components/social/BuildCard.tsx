@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Heart, MessageCircle } from 'lucide-react'
-import { byId } from '@/data/ingredients'
+import { byId } from '../../../shared/ingredients'
 import { timeAgo, type BuildItem } from '@/lib/api'
 import { computeTotals, fmtPrice } from '@/lib/totals'
 import { cn } from '@/lib/utils'

@@ -1,0 +1,18 @@
+# Local-only override: build and run the whole stack on one machine over
+# plain HTTP, without a domain or TLS. Use it together with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+# Caddy publishes:
+#   http://localhost      -> app:3000
+#   http://localhost:8081 -> garage:3902 (S3 web/read endpoint), so
+#     S3_PUBLIC_URL=http://localhost:8081 in .env resolves in a browser.
+services:
+  caddy:
+    ports:
+      - "80:80"
+      - "8081:8081"
+    volumes:
+      - ./deploy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config

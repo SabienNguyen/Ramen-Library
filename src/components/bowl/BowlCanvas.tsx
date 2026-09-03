@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef } from 'react'
 import { AnimatePresence, motion, useMotionValue } from 'motion/react'
-import { byId } from '@/data/ingredients'
+import { byId } from '../../../shared/ingredients'
 import { darken, mix } from '@/lib/color'
 import { cn } from '@/lib/utils'
 import { useBowlStore, type Bowl, type PlacedTopping } from '@/store/bowl'

@@ -29,25 +29,36 @@ Every published build gets a cover: a photo you upload (resized and re-encoded t
 
 ## Run it
 
+Needs [Bun](https://bun.sh) 1.4+.
+
 ```bash
-pnpm install
-pnpm dev        # web on http://localhost:5173, API on :3000 (proxied under /api)
-pnpm build      # typecheck + production build into dist/
-pnpm start      # production: API + static site on :3000
-pnpm lint       # oxlint
+bun install
+bun run dev         # web on http://localhost:5173, API on :3000 (proxied under /api)
+bun run build       # typecheck (tsc -b) + production build into dist/
+bun run start       # production: API + static site on :3000
+bun test            # server test suite
+bun run lint        # oxlint
+bun run db:migrate  # apply migrations by hand (optional — the server does this at boot too)
 ```
 
-The SQLite database is created at `data/ramen.db` on first boot and migrations apply automatically. No setup.
+The libSQL database (a local file in dev, `sqld` in production) is created and migrated automatically at boot. No manual setup.
 
-Environment (all optional in dev):
+Environment (all optional in dev — copy [`.env.example`](.env.example) to `.env` to override):
 
-| Var | Default | Purpose |
+| Var | Dev default | Purpose |
 | --- | --- | --- |
-| `DATABASE_FILE` | `data/ramen.db` | SQLite path |
-| `UPLOAD_DIR` | `data/uploads` | Where photos are stored; served at `/uploads/*` |
+| `DATABASE_URL` | `file:data/ramen.db` | libSQL connection: a local file in dev, `http://sqld:8080` in production |
+| `DATABASE_AUTH_TOKEN` | empty | Only needed if `sqld` is started with auth enabled |
+| `S3_ENDPOINT` | empty | Object storage endpoint. Empty falls back to local disk (`UPLOAD_DIR`, served at `/uploads/*`); in production, Garage's S3 API (`http://garage:3900`) |
+| `S3_REGION` | `garage` | S3 region (Garage accepts any value; conventionally `garage`) |
+| `S3_BUCKET` | `ramen-uploads` | Bucket name, ignored when `S3_ENDPOINT` is empty |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | empty | From `garage key create`, ignored when `S3_ENDPOINT` is empty |
+| `S3_PUBLIC_URL` | empty | Public base URL images are served from (Caddy → Garage's web endpoint) |
+| `UPLOAD_DIR` | `data/uploads` | Local-disk upload directory, used only when `S3_ENDPOINT` is empty |
 | `BETTER_AUTH_SECRET` | dev placeholder | **Set this in production.** Signs sessions |
 | `BETTER_AUTH_URL` | `http://localhost:5173` | Public origin of the site |
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | API bind |
+| `EMAIL_PROVIDER_KEY` | empty | Resend API key for verification email. Empty just logs the link and leaves verification unenforced |
 
 ## Stack
 
@@ -61,10 +72,14 @@ Environment (all optional in dev):
 | State | Zustand + `persist` | Current build + drafts, saved to `localStorage` |
 | Routing | React Router (data router) | Loaders per page, `useRevalidator` after mutations |
 | Icons | Lucide | The shadcn default |
-| API | Hono on Node | Tiny, typed, Web-standard; `/api/*` |
-| Auth | Better Auth | Email + password, cookie sessions, Drizzle adapter |
-| Database | Drizzle ORM + SQLite (better-sqlite3) | One file, zero ops; swap the driver for Postgres/Turso later |
-| Validation | Zod, shared between client and server | `shared/validation.ts` |
+| Runtime | Bun | One binary, fast installs and TS execution, no separate build step in dev |
+| API | Elysia | Tiny, typed, Web-standard; `/api/*` |
+| API client | Eden (`@elysiajs/eden`) | Typed client, types inferred from the server — no hand-written fetch wrapper |
+| Auth | Better Auth | Email + password, cookie sessions, Kysely adapter |
+| Database | Kysely + libSQL (`@libsql/client`) | Local file in dev, `sqld` container in production |
+| Query cache | TanStack Query | Mutations (like button) layered on top of the router loaders |
+| Image storage | Garage (S3-compatible) in production, local disk in dev | Chosen via `server/storage.ts` based on `S3_ENDPOINT` |
+| Validation | Zod, shared between client and server | `shared/validation.ts`, passed to Elysia routes via Standard Schema |
 
 See [`docs/UI_LIBRARY_RESEARCH.md`](docs/UI_LIBRARY_RESEARCH.md) for what was considered and why.
 
@@ -73,10 +88,16 @@ See [`docs/UI_LIBRARY_RESEARCH.md`](docs/UI_LIBRARY_RESEARCH.md) for what was co
 ```
 shared/         ingredients.ts (parts catalogue), bowl.ts (types), validation.ts (zod) — used by both sides
 server/
-  index.ts      Hono app: migrations, session middleware, auth handler, API, static serving
+  index.ts      Runs migrations, then starts `app` listening
+  app.ts        Elysia app: error handling, session, auth handler, API, static serving (exported without .listen for tests)
   routes.ts     /api — builds, likes, comments, forum, users, home
-  auth.ts       Better Auth config
-  db/           client.ts, schema.ts (+ generated auth-schema.ts), migrations/
+  session.ts    Elysia plugin: attaches the Better Auth session as `user` on every request
+  auth.ts       Better Auth config (Kysely adapter)
+  email.ts      Verification email send hook (Resend, no-ops without EMAIL_PROVIDER_KEY)
+  errors.ts     ApiError
+  storage.ts    Storage abstraction: Garage (S3) in production, local disk in dev
+  uploads.ts    Upload validation + sharp pipeline (resize, WebP, thumbnail), calls storage.ts
+  db/           client.ts (Kysely + libSQL), types.ts (DB interface), migrate.ts, migrations/
 src/
   pages/        Home, Builder, Drafts, Builds, Build, Forum/NewThread/Thread, Profile/Settings, Login/Signup
   components/
@@ -110,6 +131,65 @@ All under `/api`. Writes need a session cookie (401 otherwise).
 | POST | `/uploads` | Multipart photo → `{ imageUrl, thumbUrl }` (WebP, max 8 MB) |
 | PATCH | `/me` | Update name and bio |
 | * | `/auth/*` | Better Auth (sign-up, sign-in, session, sign-out) |
+
+## Deploy
+
+**What self-hosted means here:** everything except outbound email runs in your own containers on your own host — Bun, Elysia, Kysely, libSQL (`sqld`), Garage, Caddy, Better Auth, sharp. Nothing talks to Turso, Cloudflare, AWS, or any other account. The only rented things are the VPS, a domain, and (optionally) a transactional email provider for verification mail.
+
+### Prerequisites
+
+- A VPS (or home machine) with Docker and the Compose plugin.
+- A domain with two A records pointed at the host: `yourdomain.tld` (the app) and `img.yourdomain.tld` (uploaded photos, served through Garage).
+
+### First deploy
+
+1. Copy the env file and fill in production values:
+   ```bash
+   cp .env.example .env
+   ```
+   At minimum set: `DATABASE_URL=http://sqld:8080`, `S3_ENDPOINT=http://garage:3900`, `S3_PUBLIC_URL=https://img.yourdomain.tld`, `BETTER_AUTH_URL=https://yourdomain.tld`, `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `HOST=0.0.0.0`. Leave `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` blank for now — they come from the Garage setup below.
+2. Edit `deploy/Caddyfile`: replace the two `yourdomain.tld` placeholders with your real domain.
+3. Edit `deploy/garage.toml`: replace `rpc_secret` with a real one (`openssl rand -hex 32`).
+4. Build and start everything:
+   ```bash
+   docker compose up -d --build
+   ```
+5. One-time Garage setup. The Garage image has no shell — its only binary is `/garage` — so run each step through `docker compose exec`:
+   ```bash
+   docker compose exec garage /garage status                                   # note the node ID
+   docker compose exec garage /garage layout assign -z dc1 -c 10G <node-id>
+   docker compose exec garage /garage layout apply --version 1
+   docker compose exec garage /garage bucket create ramen-uploads
+   docker compose exec garage /garage bucket website --allow ramen-uploads
+   docker compose exec garage /garage key create ramen-app                     # prints a key ID + secret
+   docker compose exec garage /garage bucket allow --read --write ramen-uploads --key ramen-app
+   ```
+   Put the printed key ID and secret into `.env` as `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`, then restart the app so it picks them up:
+   ```bash
+   docker compose up -d app
+   ```
+
+Caddy requests Let's Encrypt certificates automatically on first request to each domain — no manual TLS setup.
+
+### Local full-stack test
+
+To exercise the same containers on one machine over plain HTTP, without a domain, use the local override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+This publishes `http://localhost` (the app, via `deploy/Caddyfile.local`) and `http://localhost:8081` (Garage's web endpoint). Set `S3_PUBLIC_URL=http://localhost:8081` in `.env` for this mode. Run the same one-time Garage setup commands above against this stack before it can serve uploads.
+
+### Backups
+
+`deploy/backup.sh` runs `restic backup` against the `sqld-data`, `garage-meta` and `garage-data` volumes (through a throwaway container, so nothing needs installing on the host) and prunes with `restic forget --keep-daily 14 --keep-weekly 8 --prune`. It needs `RESTIC_REPOSITORY` and `RESTIC_PASSWORD` (plus any provider credentials the repository needs) set in the environment. Cron example:
+
+```cron
+0 3 * * * RESTIC_REPOSITORY=... RESTIC_PASSWORD=... /path/to/deploy/backup.sh >> /var/log/ramen-backup.log 2>&1
+```
+
+Nothing is stopped before backing up — `sqld` and Garage write through a WAL, so the backup is crash-consistent (equivalent to a hard power-off) but not transaction-consistent. That's an acceptable tradeoff at this scale; restic dedupes, so nightly runs stay cheap.
 
 ## Adding a part
 

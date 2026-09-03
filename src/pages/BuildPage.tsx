@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Link, useLoaderData, useNavigate, useRevalidator } from 'react-router'
 import { AlertTriangle, Camera, CircleAlert, Flame, Hammer, Heart, Info, Link2, Trash2 } from 'lucide-react'
-import { byId, slotMeta, type PartBase, type Slot } from '@/data/ingredients'
-import { api, timeAgo, uploadPhoto, type BuildDetail } from '@/lib/api'
+import { byId, slotMeta, type PartBase, type Slot } from '../../shared/ingredients'
+import { client, timeAgo, unwrap, uploadPhoto, type BuildDetail } from '@/lib/api'
 import { BuildCover } from '@/components/build/CoverArt'
 import { CoverPicker, defaultCover, type CoverChoice } from '@/components/build/CoverPicker'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -44,7 +45,7 @@ export function BuildPage() {
       let imageUrl = cover.imageUrl
       let thumbUrl = cover.thumbUrl
       if (cover.file) ({ imageUrl, thumbUrl } = await uploadPhoto(cover.file))
-      await api(`/builds/${build.id}`, { method: 'PATCH', json: { imageUrl, thumbUrl, templateId: imageUrl ? null : cover.templateId } })
+      await unwrap(client.api.builds({ id: build.id }).patch({ imageUrl, thumbUrl, templateId: imageUrl ? null : cover.templateId }))
       setCoverOpen(false)
       revalidator.revalidate()
     } catch (err) {
@@ -54,16 +55,30 @@ export function BuildPage() {
     }
   }
 
-  async function toggleLike() {
+  const likeMutation = useMutation({
+    mutationFn: () => unwrap(client.api.builds({ id: build.id }).like.post()),
+    onMutate: async () => {
+      const previous = like
+      setLike({ liked: !previous.liked, count: previous.count + (previous.liked ? -1 : 1) })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context) setLike(context.previous)
+    },
+    onSuccess: (res) => {
+      setLike({ liked: res.liked, count: res.likeCount })
+      revalidator.revalidate()
+    },
+  })
+
+  function toggleLike() {
     if (!session) return navigate(`/login?next=/builds/${build.id}`)
-    const res = await api<{ liked: boolean; likeCount: number }>(`/builds/${build.id}/like`, { method: 'POST' })
-    setLike({ liked: res.liked, count: res.likeCount })
-    revalidator.revalidate()
+    likeMutation.mutate()
   }
 
   async function remove() {
     if (!confirm('Delete this build? Comments go with it.')) return
-    await api(`/builds/${build.id}`, { method: 'DELETE' })
+    await unwrap(client.api.builds({ id: build.id }).delete())
     navigate('/builds')
   }
 
@@ -251,7 +266,13 @@ export function BuildPage() {
 
         <section>
           <h2 className="mb-2 border-b border-border pb-1 text-[15px] font-semibold">Comments ({build.comments.length})</h2>
-          <Discussion items={build.comments} postTo={`/builds/${build.id}/comments`} deletePath={(id) => `/comments/${id}`} placeholder="Write a comment" next={`/builds/${build.id}`} />
+          <Discussion
+            items={build.comments}
+            onPost={(body) => unwrap(client.api.builds({ id: build.id }).comments.post({ body }))}
+            onDelete={(id) => unwrap(client.api.comments({ id }).delete())}
+            placeholder="Write a comment"
+            next={`/builds/${build.id}`}
+          />
         </section>
       </div>
     </div>

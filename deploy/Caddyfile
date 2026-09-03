@@ -1,0 +1,19 @@
+# Production reverse proxy config. Replace the placeholder domains below
+# with your real domain and point their DNS at this host before starting
+# Caddy — it requests Let's Encrypt certificates automatically on first
+# request to each site.
+
+yourdomain.tld {
+	reverse_proxy app:3000
+}
+
+img.yourdomain.tld {
+	# Garage's web endpoint, serving the ramen-uploads bucket read-only.
+	# It picks the bucket from the Host header as
+	# <bucket>.<s3_web.root_domain>, which is unrelated to img.yourdomain.tld
+	# — so rewrite it to match deploy/garage.toml's
+	# s3_web.root_domain = ".web.garage.localhost".
+	reverse_proxy garage:3902 {
+		header_up Host ramen-uploads.web.garage.localhost
+	}
+}

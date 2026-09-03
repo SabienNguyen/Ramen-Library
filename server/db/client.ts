@@ -1,11 +1,26 @@
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import * as schema from './schema'
+import { mkdirSync } from 'node:fs'
+import { dirname } from 'node:path'
+import { createClient } from '@libsql/client'
+import { Kysely } from 'kysely'
+import { LibsqlDialect } from '@libsql/kysely-libsql'
+import type { DB } from './types'
 
-const file = process.env.DATABASE_FILE ?? 'data/ramen.db'
-export const sqlite = new Database(file)
-sqlite.pragma('journal_mode = WAL')
-sqlite.pragma('foreign_keys = ON')
+const url = process.env.DATABASE_URL ?? 'file:data/ramen.db'
 
-export const db = drizzle(sqlite, { schema })
-export type Db = typeof db
+if (url.startsWith('file:')) {
+  const path = url.slice('file:'.length)
+  if (path && path !== ':memory:') {
+    mkdirSync(dirname(path), { recursive: true })
+  }
+}
+
+export const libsql = createClient({
+  url,
+  authToken: process.env.DATABASE_AUTH_TOKEN || undefined,
+})
+
+// `@libsql/kysely-libsql` bundles its own (older) copy of `@libsql/client`, whose
+// `Client` type doesn't structurally match the one we construct above (Bun/npm
+// hoisting doesn't dedupe transitive deps here). The runtime object is identical;
+// the cast only works around the type mismatch between the two copies.
+export const db = new Kysely<DB>({ dialect: new LibsqlDialect({ client: libsql as never }) })

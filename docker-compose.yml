@@ -1,0 +1,59 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # compose `environment` overrides values from `env_file`, so these
+      # always win over whatever HOST/PORT/NODE_ENV a copied .env sets —
+      # the container must bind 0.0.0.0:3000 to be reachable at all.
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+    volumes:
+      # Fallback local-disk upload storage when S3_ENDPOINT is unset.
+      # Also holds a file: DATABASE_URL if you choose not to run sqld.
+      - app-uploads:/app/data
+    depends_on:
+      - sqld
+      - garage
+    restart: unless-stopped
+
+  sqld:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    command: ["sqld", "--http-listen-addr", "0.0.0.0:8080"]
+    volumes:
+      - sqld-data:/var/lib/sqld
+    # No ports published to the host; only reachable from other
+    # containers on the compose network at http://sqld:8080.
+    restart: unless-stopped
+
+  garage:
+    image: dxflrs/garage:v1.3.1
+    volumes:
+      - ./deploy/garage.toml:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    # No ports published to the host; the S3 API (garage:3900) and web
+    # endpoint (garage:3902) are reached through Caddy or other containers.
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  app-uploads: {}
+  sqld-data: {}
+  garage-meta: {}
+  garage-data: {}
+  caddy-data: {}
+  caddy-config: {}

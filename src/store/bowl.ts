@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { broths, noodles, oils, tares, toppings, type Slot } from '@/data/ingredients'
+import { broths, noodles, oils, tares, toppings, type Slot } from '../../shared/ingredients'
 
 import { MAX_TOPPINGS, type Bowl, type PlacedTopping } from '../../shared/bowl'
 

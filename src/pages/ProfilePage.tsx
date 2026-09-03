@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLoaderData, useNavigate } from 'react-router'
-import { api, timeAgo, type BuildItem, type Profile } from '@/lib/api'
+import { client, timeAgo, unwrap, type BuildItem, type Profile } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
 import { Avatar } from '@/components/ui/avatar'
 import { CategoryChip } from '@/components/social/CategoryChip'
@@ -97,7 +97,7 @@ export function SettingsPage() {
     setBusy(true)
     setMsg(null)
     try {
-      await api('/me', { method: 'PATCH', json: { name: curName, bio: curBio } })
+      await unwrap(client.api.me.patch({ name: curName, bio: curBio }))
       await refetch()
       setMsg('Saved.')
     } catch (err) {

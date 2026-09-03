@@ -1,4 +1,4 @@
-import { byId, type PartBase, type Tag } from '@/data/ingredients'
+import { byId, type PartBase, type Tag } from '../../shared/ingredients'
 import type { Bowl } from '@/store/bowl'
 
 export type Totals = {

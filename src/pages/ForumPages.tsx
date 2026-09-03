@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLoaderData, useNavigate, useSearchParams } from 'react-router'
 import { FORUM_CATEGORIES } from '../../shared/bowl'
-import { api, type ThreadDetail, type ThreadItem } from '@/lib/api'
+import { client, unwrap, type ThreadDetail, type ThreadItem } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
 import { categoryBlurb, categoryLabel } from '@/lib/forum'
 import { cn } from '@/lib/utils'
@@ -63,7 +63,7 @@ export function NewThreadPage() {
     setBusy(true)
     setError(null)
     try {
-      const { id } = await api<{ id: string }>('/forum/threads', { method: 'POST', json: { category, title, body } })
+      const { id } = await unwrap(client.api.forum.threads.post({ category, title, body }))
       navigate(`/forum/${id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to post.')
@@ -129,7 +129,7 @@ export function ThreadPage() {
 
   async function remove() {
     if (!confirm('Delete this thread and all its replies?')) return
-    await api(`/forum/threads/${thread.id}`, { method: 'DELETE' })
+    await unwrap(client.api.forum.threads({ id: thread.id }).delete())
     navigate('/forum')
   }
 
@@ -142,7 +142,15 @@ export function ThreadPage() {
       <PostRow author={thread.author} createdAt={thread.createdAt} tag="Original poster" onDelete={mine ? remove : undefined}>
         {thread.body}
       </PostRow>
-      <Discussion items={thread.posts} postTo={`/forum/threads/${thread.id}/posts`} deletePath={(id) => `/forum/posts/${id}`} placeholder="" next={`/forum/${thread.id}`} noun="reply" startIndex={2} />
+      <Discussion
+        items={thread.posts}
+        onPost={(body) => unwrap(client.api.forum.threads({ id: thread.id }).posts.post({ body }))}
+        onDelete={(id) => unwrap(client.api.forum.posts({ id }).delete())}
+        placeholder=""
+        next={`/forum/${thread.id}`}
+        noun="reply"
+        startIndex={2}
+      />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 # Self-hosted stack migration plan
 
-Status: **plan only, no code changed yet.** `main` still runs the Node / Hono / Drizzle / SQLite-file stack described in the README.
+Status: **Implemented on branch `claude/self-hosted-stack`; see README for run and deploy instructions.**
 
 This document is the agreed target and the order of work, written so it can be executed locally step by step. Each step ends with the full browser flow passing (register, publish with photo, like, comment, new thread, reply, edit profile, sign out, sign in).
 
