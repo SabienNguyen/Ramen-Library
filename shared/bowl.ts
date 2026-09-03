@@ -5,6 +5,8 @@ export type PlacedTopping = {
   x: number
   y: number
   rotation: number
+  /** Piece count for countable toppings, level index 0–2 for portion toppings. Missing = default. */
+  qty?: number
 }
 
 export type Bowl = {
@@ -12,8 +14,15 @@ export type Bowl = {
   tareId: string | null
   noodleId: string | null
   oilId: string | null
+  /** Missing = the part's default serving. */
+  brothMl?: number
+  tareMl?: number
+  noodleG?: number
+  oilMl?: number
   toppings: PlacedTopping[]
 }
+
+export const AMOUNT_KEY = { broth: 'brothMl', tare: 'tareMl', noodle: 'noodleG', oil: 'oilMl' } as const
 
 export const MAX_TOPPINGS = 12
 
