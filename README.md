@@ -46,7 +46,7 @@ A web app for composing ramen bowls from a parts catalogue, publishing them, and
 | Reverse proxy | Caddy | Automatic TLS via Let's Encrypt |
 | Rate limiting | In-process fixed-window counters | No dependency; see Deploy |
 
-Design notes and the component library comparison are in [`docs/UI_LIBRARY_RESEARCH.md`](docs/UI_LIBRARY_RESEARCH.md).
+Backend choices, alternatives considered, and trade-offs are in [`docs/BACKEND_STACK.md`](docs/BACKEND_STACK.md). Design notes and the component library comparison are in [`docs/UI_LIBRARY_RESEARCH.md`](docs/UI_LIBRARY_RESEARCH.md).
 
 ## Run it
 
