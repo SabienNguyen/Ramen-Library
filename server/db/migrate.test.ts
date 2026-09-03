@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -57,6 +57,8 @@ describe('migrateToLatest', () => {
   })
 
   test('sign up creates a user row with null bio', async () => {
+    const logSpy = spyOn(console, 'log').mockImplementation(() => {})
+
     const res = await auth.api.signUpEmail({
       body: {
         email: 'tester@example.com',
@@ -66,6 +68,12 @@ describe('migrateToLatest', () => {
     })
     expect(res.user).toBeTruthy()
     expect(res.user.email).toBe('tester@example.com')
+
+    // The verification email hook logs the link when EMAIL_PROVIDER_KEY is
+    // unset — asserting this fired confirms sendVerificationEmail is
+    // actually wired up (sendOnSignUp) rather than silently skipped.
+    expect(logSpy).toHaveBeenCalled()
+    logSpy.mockRestore()
 
     const row = await db
       .selectFrom('user')
@@ -77,5 +85,11 @@ describe('migrateToLatest', () => {
     expect(row?.bio).toBeNull()
     expect(typeof row?.createdAt).toBe('string')
     expect(Number.isNaN(new Date(row!.createdAt).getTime())).toBe(false)
+  })
+
+  test('journal_mode is wal for the file db', async () => {
+    const { sql } = await import('kysely')
+    const result = await sql<{ journal_mode: string }>`PRAGMA journal_mode`.execute(db)
+    expect(result.rows[0]?.journal_mode).toBe('wal')
   })
 })

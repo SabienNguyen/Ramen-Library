@@ -21,12 +21,58 @@ describe('local storage', () => {
   })
 })
 
+describe('isOwnUploadUrl', () => {
+  test('accepts /uploads/ urls when S3 is not configured, rejects everything else', async () => {
+    const { isOwnUploadUrl } = await import('./storage.ts')
+    expect(isOwnUploadUrl('/uploads/abc.webp')).toBe(true)
+    expect(isOwnUploadUrl('https://attacker.example/x.webp')).toBe(false)
+    expect(isOwnUploadUrl('https://img.example/abc.webp')).toBe(false)
+  })
+})
+
 describe('exported constants', () => {
   test('s3Configured and LOCAL_UPLOAD_DIR reflect env', async () => {
     const mod = await import('./storage.ts')
     expect(typeof mod.s3Configured).toBe('boolean')
     expect(typeof mod.LOCAL_UPLOAD_DIR).toBe('string')
     expect(mod.storage).toBeTruthy()
+  })
+})
+
+describe('s3 storage validation', () => {
+  test('throws naming missing S3_BUCKET when S3_ENDPOINT is set but bucket is missing', async () => {
+    const { createStorage } = await import('./storage.ts')
+    expect(() =>
+      createStorage({
+        S3_ENDPOINT: 'http://x',
+        S3_PUBLIC_URL: 'https://img.example',
+        S3_ACCESS_KEY_ID: 'a',
+        S3_SECRET_ACCESS_KEY: 's',
+      } as NodeJS.ProcessEnv),
+    ).toThrow(/S3_BUCKET/)
+  })
+
+  test('strips a trailing slash from S3_PUBLIC_URL', async () => {
+    const { createStorage } = await import('./storage.ts')
+    const calls: unknown[] = []
+    const fakeClient = {
+      send: async (command: unknown) => {
+        calls.push(command)
+        return {}
+      },
+    }
+    const storage = createStorage(
+      {
+        S3_ENDPOINT: 'http://x',
+        S3_PUBLIC_URL: 'https://img.example/',
+        S3_BUCKET: 'b',
+        S3_ACCESS_KEY_ID: 'a',
+        S3_SECRET_ACCESS_KEY: 's',
+      } as NodeJS.ProcessEnv,
+      fakeClient as never,
+    )
+    const url = await storage.putObject('foo.webp', Buffer.from('data'), 'image/webp')
+    expect(url).toBe('https://img.example/foo.webp')
   })
 })
 

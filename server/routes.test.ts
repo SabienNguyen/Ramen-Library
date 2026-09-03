@@ -129,6 +129,42 @@ describe('server routes', () => {
     buildId = body.id
   })
 
+  test('POST /api/builds with a third-party imageUrl is rejected', async () => {
+    const res = await app.handle(
+      req('/api/builds', {
+        method: 'POST',
+        cookie,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Sneaky Bowl',
+          description: '',
+          bowl,
+          imageUrl: 'https://attacker.example/x.webp',
+        }),
+      }),
+    )
+    expect(res.status).toBe(400)
+    const body = await json(res)
+    expect(body.error).toBe('imageUrl: not an upload')
+  })
+
+  test('POST /api/builds with our own /uploads/ imageUrl is accepted', async () => {
+    const res = await app.handle(
+      req('/api/builds', {
+        method: 'POST',
+        cookie,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Legit Bowl',
+          description: '',
+          bowl,
+          imageUrl: '/uploads/legit.webp',
+        }),
+      }),
+    )
+    expect(res.status).toBe(201)
+  })
+
   test('GET /api/builds lists it with author + counts', async () => {
     const res = await app.handle(req('/api/builds', { cookie }))
     expect(res.status).toBe(200)
@@ -143,6 +179,27 @@ describe('server routes', () => {
     expect(typeof item.createdAt).toBe('string')
     expect(Number.isNaN(new Date(item.createdAt).getTime())).toBe(false)
     expect(item.bowl).toEqual(bowl)
+  })
+
+  test('GET /api/builds?limit=abc falls back to the default limit instead of 500ing', async () => {
+    const res = await app.handle(req('/api/builds?limit=abc', { cookie }))
+    expect(res.status).toBe(200)
+    const body = await json(res)
+    expect(Array.isArray(body.items)).toBe(true)
+  })
+
+  test('GET /api/builds?limit=-1 clamps to 1 item', async () => {
+    const res = await app.handle(req('/api/builds?limit=-1', { cookie }))
+    expect(res.status).toBe(200)
+    const body = await json(res)
+    expect(body.items.length).toBeLessThanOrEqual(1)
+  })
+
+  test('GET /api/builds?limit=999 is capped at 60', async () => {
+    const res = await app.handle(req('/api/builds?limit=999', { cookie }))
+    expect(res.status).toBe(200)
+    const body = await json(res)
+    expect(body.items.length).toBeLessThanOrEqual(60)
   })
 
   test('POST /api/builds/:id/like toggles', async () => {

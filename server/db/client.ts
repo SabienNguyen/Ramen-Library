@@ -19,6 +19,13 @@ export const libsql = createClient({
   authToken: process.env.DATABASE_AUTH_TOKEN || undefined,
 })
 
+if (url.startsWith('file:')) {
+  // The old raw sqlite3 client set these pragmas by default; libsql's
+  // createClient sets neither, so set them explicitly for local file DBs.
+  await libsql.execute('PRAGMA journal_mode = WAL')
+  await libsql.execute('PRAGMA busy_timeout = 5000')
+}
+
 // `@libsql/kysely-libsql` bundles its own (older) copy of `@libsql/client`, whose
 // `Client` type doesn't structurally match the one we construct above (Bun/npm
 // hoisting doesn't dedupe transitive deps here). The runtime object is identical;

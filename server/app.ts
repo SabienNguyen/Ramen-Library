@@ -39,13 +39,24 @@ if (!s3Configured) {
     await staticPlugin({
       assets: LOCAL_UPLOAD_DIR,
       prefix: '/uploads',
+      // Without this, @elysiajs/static defaults `alwaysStatic` to true in production,
+      // snapshotting the uploads dir at boot — files uploaded afterward would 404 out of
+      // the static plugin and fall through to the SPA index.html fallback below.
+      alwaysStatic: false,
       headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
     }),
   )
 }
 
 if (process.env.NODE_ENV === 'production') {
-  app.use(await staticPlugin({ assets: 'dist', prefix: '/' })).get('*', () => Bun.file('dist/index.html'))
+  app.use(await staticPlugin({ assets: 'dist', prefix: '/' })).get('*', ({ request, set }) => {
+    const { pathname } = new URL(request.url)
+    if (pathname.startsWith('/api/') || pathname.startsWith('/uploads/')) {
+      set.status = 404
+      return { error: 'Not found.' }
+    }
+    return Bun.file('dist/index.html')
+  })
 }
 
 export type App = typeof app

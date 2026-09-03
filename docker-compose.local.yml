@@ -7,6 +7,11 @@
 #   http://localhost      -> app:3000
 #   http://localhost:8081 -> garage:3902 (S3 web/read endpoint), so
 #     S3_PUBLIC_URL=http://localhost:8081 in .env resolves in a browser.
+#
+# Also set BETTER_AUTH_URL=http://localhost in .env for this mode — Better
+# Auth trusts the origin of BETTER_AUTH_URL, so leaving it at the Vite dev
+# default (http://localhost:5173) makes sign-in fail with "Invalid origin"
+# when the site is served from Caddy at http://localhost.
 services:
   caddy:
     ports:

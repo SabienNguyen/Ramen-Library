@@ -43,6 +43,8 @@ bun run db:migrate  # apply migrations by hand (optional — the server does thi
 
 The libSQL database (a local file in dev, `sqld` in production) is created and migrated automatically at boot. No manual setup.
 
+**Upgrading from the Drizzle version:** the current migration creates all tables unconditionally and Better Auth's tables now use camelCase columns, so an existing pre-migration `data/ramen.db` will fail at boot with an error like `table user already exists`. Delete or move that file (it's only test data) — `rm data/ramen.db` — or, if you need to keep real data, follow the data-migration section of the self-hosted stack plan instead of deleting it.
+
 Environment (all optional in dev — copy [`.env.example`](.env.example) to `.env` to override):
 
 | Var | Dev default | Purpose |
@@ -57,6 +59,7 @@ Environment (all optional in dev — copy [`.env.example`](.env.example) to `.en
 | `UPLOAD_DIR` | `data/uploads` | Local-disk upload directory, used only when `S3_ENDPOINT` is empty |
 | `BETTER_AUTH_SECRET` | dev placeholder | **Set this in production.** Signs sessions |
 | `BETTER_AUTH_URL` | `http://localhost:5173` | Public origin of the site |
+| `TRUSTED_ORIGINS` | empty | Extra comma-separated origins Better Auth should trust, beyond `BETTER_AUTH_URL`'s origin and the Vite dev defaults |
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | API bind |
 | `EMAIL_PROVIDER_KEY` | empty | Resend API key for verification email. Empty just logs the link and leaves verification unenforced |
 
@@ -179,7 +182,7 @@ To exercise the same containers on one machine over plain HTTP, without a domain
 docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 ```
 
-This publishes `http://localhost` (the app, via `deploy/Caddyfile.local`) and `http://localhost:8081` (Garage's web endpoint). Set `S3_PUBLIC_URL=http://localhost:8081` in `.env` for this mode. Run the same one-time Garage setup commands above against this stack before it can serve uploads.
+This publishes `http://localhost` (the app, via `deploy/Caddyfile.local`) and `http://localhost:8081` (Garage's web endpoint). Set `S3_PUBLIC_URL=http://localhost:8081` and `BETTER_AUTH_URL=http://localhost` in `.env` for this mode (Better Auth trusts the origin of `BETTER_AUTH_URL`, so leaving it at the Vite dev default breaks sign-in with "Invalid origin" once the site is served from Caddy). Run the same one-time Garage setup commands above against this stack before it can serve uploads.
 
 ### Backups
 

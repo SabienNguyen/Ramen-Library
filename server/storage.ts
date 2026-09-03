@@ -17,8 +17,14 @@ export const s3Configured = Boolean(process.env.S3_ENDPOINT)
 export const LOCAL_UPLOAD_DIR = process.env.UPLOAD_DIR ?? 'data/uploads'
 
 function createS3Storage(env: NodeJS.ProcessEnv, client?: S3Like): Storage {
+  const required = ['S3_BUCKET', 'S3_PUBLIC_URL', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'] as const
+  const missing = required.filter((key) => !env[key])
+  if (missing.length > 0) {
+    throw new Error(`S3 storage is misconfigured: missing ${missing.join(', ')}`)
+  }
+
   const bucket = env.S3_BUCKET
-  const publicUrl = env.S3_PUBLIC_URL
+  const publicUrl = (env.S3_PUBLIC_URL as string).replace(/\/+$/, '')
   const s3 =
     client ??
     new S3Client({
@@ -59,6 +65,19 @@ function createLocalStorage(env: NodeJS.ProcessEnv): Storage {
       return `/uploads/${key}`
     },
   }
+}
+
+/**
+ * True only if `url` points at this deployment's own upload storage (S3 public URL prefix
+ * when S3 is configured, `/uploads/` when serving local files) — never a third-party host.
+ * Reads `process.env` live (not captured) so it stays correct alongside `storage`'s lazy env reads.
+ */
+export function isOwnUploadUrl(url: string): boolean {
+  if (process.env.S3_ENDPOINT) {
+    const publicUrl = (process.env.S3_PUBLIC_URL ?? '').replace(/\/+$/, '')
+    return publicUrl !== '' && url.startsWith(`${publicUrl}/`)
+  }
+  return url.startsWith('/uploads/')
 }
 
 export function createStorage(env: NodeJS.ProcessEnv = process.env, s3Client?: S3Like): Storage {

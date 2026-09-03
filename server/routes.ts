@@ -4,6 +4,7 @@ import { db } from './db/client'
 import { ApiError } from './errors'
 import { session } from './session'
 import { saveUpload } from './uploads'
+import { isOwnUploadUrl } from './storage'
 import {
   commentSchema,
   postSchema,
@@ -14,6 +15,18 @@ import {
 } from '../shared/validation'
 
 const uid = () => crypto.randomUUID()
+
+/** Throws if `imageUrl`/`thumbUrl` are set but don't point at this deployment's own upload storage. */
+function assertOwnUploadUrls(body: { imageUrl?: string | null; thumbUrl?: string | null }): void {
+  for (const [field, value] of [
+    ['imageUrl', body.imageUrl],
+    ['thumbUrl', body.thumbUrl],
+  ] as const) {
+    if (typeof value === 'string' && !isOwnUploadUrl(value)) {
+      throw new ApiError(400, `${field}: not an upload`)
+    }
+  }
+}
 
 const AUTHOR_COLS = ['user.id as author_id', 'user.name as author_name', 'user.image as author_image'] as const
 
@@ -207,6 +220,7 @@ export const api = new Elysia({ prefix: '/api' })
       .post(
         '/builds',
         async ({ user, body, set }) => {
+          assertOwnUploadUrls(body)
           const id = uid()
           const now = Date.now()
           await db
@@ -233,6 +247,7 @@ export const api = new Elysia({ prefix: '/api' })
       .patch(
         '/builds/:id',
         async ({ user, params, body }) => {
+          assertOwnUploadUrls(body)
           const row = await db.selectFrom('builds').select(['user_id']).where('id', '=', params.id).executeTakeFirst()
           if (!row) throw new ApiError(404, 'Build not found.')
           if (row.user_id !== user!.id) throw new ApiError(403, 'Not your build.')
@@ -387,7 +402,8 @@ export const api = new Elysia({ prefix: '/api' })
   .get('/builds', async ({ query, user }) => {
     const sort = query.sort === 'top' ? 'top' : 'new'
     const userId = query.user
-    const limit = Math.min(60, Number(query.limit ?? 24))
+    const parsedLimit = Number(query.limit ?? 24)
+    const limit = Math.min(60, Math.max(1, Number.isFinite(parsedLimit) ? parsedLimit : 24))
 
     let q = db
       .selectFrom('builds')
