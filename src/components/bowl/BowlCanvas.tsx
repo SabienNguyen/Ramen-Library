@@ -174,6 +174,7 @@ function PlacedToppingView({
   containerRef: React.RefObject<HTMLDivElement | null>
 }) {
   const topping = byId.topping[placed.toppingId]
+  const count = topping.serving.unit === 'piece' ? (placed.qty ?? topping.serving.amount) : 1
   const moveTopping = useBowlStore((s) => s.moveTopping)
   const removeTopping = useBowlStore((s) => s.removeTopping)
   const x = useMotionValue(0)
@@ -217,8 +218,11 @@ function PlacedToppingView({
       }}
       title={interactive ? `${topping.name} — drag to move, tap to remove` : topping.name}
     >
-      <div className="aspect-square w-full drop-shadow-[0_3px_3px_rgba(0,0,0,0.35)]">
+      <div className="relative aspect-square w-full drop-shadow-[0_3px_3px_rgba(0,0,0,0.35)]">
         <ToppingGlyph glyph={topping.glyph} className="size-full" />
+        {count > 1 && (
+          <span className="absolute -right-1 -bottom-1 rounded-full bg-foreground px-1 text-[9px] leading-4 font-semibold text-background">×{count}</span>
+        )}
       </div>
     </motion.div>
   )

@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react'
-import { catalogue, slotMeta, tagLabel, type PartBase, type Slot, type Tag } from '../../../shared/ingredients'
+import { catalogue, formatAmount, slotMeta, type PartBase, type Slot } from '../../../shared/ingredients'
 import { fmtMinutes, fmtPrice } from '@/lib/totals'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -38,7 +37,7 @@ export function PartPickerDialog({
     const q = query.trim().toLowerCase()
     return parts
       .filter((p) => !q || `${p.name} ${p.jp ?? ''} ${p.note}`.toLowerCase().includes(q))
-      .filter((p) => diet === 'all' || p.tags.includes('vegan') || (diet === 'vegetarian' && p.tags.includes('vegetarian')))
+      .filter((p) => diet === 'all' || p.diet === 'plant' || (diet === 'vegetarian' && (p.diet === 'egg' || p.diet === 'dairy')))
       .sort((a, b) => {
         const va = a[sort.key]
         const vb = b[sort.key]
@@ -85,7 +84,7 @@ export function PartPickerDialog({
                 <th className="text-left">
                   <SortButton label="Part" active={sort.key === 'name'} dir={sort.dir} onClick={() => toggleSort('name')} />
                 </th>
-                <th className="hidden text-left sm:table-cell">Tags</th>
+                <th className="hidden text-left sm:table-cell">Serving</th>
                 <th className="text-right">
                   <SortButton label="kcal" active={sort.key === 'kcal'} dir={sort.dir} onClick={() => toggleSort('kcal')} align="right" />
                 </th>
@@ -122,13 +121,7 @@ export function PartPickerDialog({
                         </div>
                       </div>
                     </td>
-                    <td className="hidden sm:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {p.tags.map((t) => (
-                          <TagBadge key={t} tag={t} />
-                        ))}
-                      </div>
-                    </td>
+                    <td className="hidden text-[12px] text-muted-foreground sm:table-cell">{formatAmount(p, undefined)}</td>
                     <td className="text-right tabular-nums whitespace-nowrap">{p.kcal}</td>
                     <td className="hidden text-right tabular-nums whitespace-nowrap md:table-cell">{p.sodium}</td>
                     <td className="text-right tabular-nums whitespace-nowrap">{fmtMinutes(p.minutes)}</td>
@@ -163,14 +156,5 @@ function SortButton({ label, active, dir, onClick, align = 'left' }: { label: st
       {label}
       <Icon className="size-3" />
     </button>
-  )
-}
-
-export function TagBadge({ tag }: { tag: Tag }) {
-  const variant = tag === 'vegan' || tag === 'vegetarian' ? 'scallion' : tag === 'spicy' ? 'default' : 'outline'
-  return (
-    <Badge variant={variant}>
-      {tagLabel[tag]}
-    </Badge>
   )
 }

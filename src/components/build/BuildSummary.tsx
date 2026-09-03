@@ -123,6 +123,7 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
         <CardTitle>{suggested}</CardTitle>
         <div className="mt-1 flex flex-wrap gap-1.5">
           <Badge variant={totals.diet === 'omnivore' ? 'outline' : 'scallion'}>{totals.diet === 'vegan' ? 'Vegan' : totals.diet === 'vegetarian' ? 'Vegetarian' : 'Omnivore'}</Badge>
+          {totals.gluten && <Badge variant="outline">Gluten</Badge>}
           <Badge variant="outline" className="gap-0.5">
             {[0, 1, 2].map((i) => (
               <Flame key={i} className={cn('size-3', i < totals.spice ? 'fill-primary text-primary' : 'text-muted-foreground/40')} />

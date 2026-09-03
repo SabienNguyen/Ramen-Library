@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useLoaderData, useNavigate, useRevalidator } from 'react-router'
 import { AlertTriangle, Camera, CircleAlert, Flame, Hammer, Heart, Info, Link2, Trash2 } from 'lucide-react'
-import { byId, slotMeta, type PartBase, type Slot } from '../../shared/ingredients'
+import { formatAmount, slotMeta } from '../../shared/ingredients'
 import { client, timeAgo, unwrap, uploadPhoto, type BuildDetail } from '@/lib/api'
 import { BuildCover } from '@/components/build/CoverArt'
 import { CoverPicker, defaultCover, type CoverChoice } from '@/components/build/CoverPicker'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { authClient } from '@/lib/auth-client'
 import { checkCompatibility } from '@/lib/compat'
-import { computeTotals, fmtMinutes, fmtPrice } from '@/lib/totals'
+import { computeTotals, fmtMinutes, fmtPrice, linesOf } from '@/lib/totals'
 import { cn } from '@/lib/utils'
 import { useBowlStore } from '@/store/bowl'
 import { Avatar } from '@/components/ui/avatar'
@@ -17,7 +17,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { BowlCanvas } from '@/components/bowl/BowlCanvas'
-import { TagBadge } from '@/components/build/PartPickerDialog'
 import { PartSwatch } from '@/components/build/PartSwatch'
 import { Discussion } from '@/components/social/Discussion'
 
@@ -92,12 +91,7 @@ export function BuildPage() {
     }
   }
 
-  const rows: { slot: Slot; part: PartBase }[] = []
-  if (build.bowl.brothId) rows.push({ slot: 'broth', part: byId.broth[build.bowl.brothId] })
-  if (build.bowl.tareId) rows.push({ slot: 'tare', part: byId.tare[build.bowl.tareId] })
-  if (build.bowl.noodleId) rows.push({ slot: 'noodle', part: byId.noodle[build.bowl.noodleId] })
-  if (build.bowl.oilId) rows.push({ slot: 'oil', part: byId.oil[build.bowl.oilId] })
-  for (const t of build.bowl.toppings) rows.push({ slot: 'topping', part: byId.topping[t.toppingId] })
+  const rows = useMemo(() => linesOf(build.bowl), [build.bowl])
 
   return (
     <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
@@ -145,6 +139,7 @@ export function BuildPage() {
             <Stat label="Sodium" value={`${totals.sodium.toLocaleString()} mg`} />
             <div className="col-span-2 flex items-center gap-2 pt-1">
               <Badge variant={totals.diet === 'omnivore' ? 'outline' : 'scallion'}>{totals.diet === 'vegan' ? 'Vegan' : totals.diet === 'vegetarian' ? 'Vegetarian' : 'Omnivore'}</Badge>
+              {totals.gluten && <Badge variant="outline">Gluten</Badge>}
               <Badge variant="outline" className="gap-0.5">
                 {[0, 1, 2].map((i) => (
                   <Flame key={i} className={cn('size-3', i < totals.spice ? 'fill-primary text-primary' : 'text-muted-foreground/40')} />
@@ -203,13 +198,14 @@ export function BuildPage() {
               <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-semibold">
                 <th className="w-28">Component</th>
                 <th>Part</th>
+                <th className="hidden sm:table-cell">Amount</th>
                 <th className="text-right!">kcal</th>
                 <th className="hidden text-right! md:table-cell">Time</th>
                 <th className="text-right!">Price</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ slot, part }, i) => (
+              {rows.map(({ slot, part, amount, factor }, i) => (
                 <tr key={`${slot}-${i}`} className="border-t border-border/60">
                   <td className="px-2 py-1.5 text-xs text-muted-foreground">{i > 0 && rows[i - 1].slot === slot ? '' : slotMeta[slot].label}</td>
                   <td className="px-2 py-1.5">
@@ -218,22 +214,18 @@ export function BuildPage() {
                       <div className="min-w-0">
                         <span className="font-semibold">{part.name}</span>
                         {part.jp && <span className="ml-1 text-[11px] text-muted-foreground">{part.jp}</span>}
-                        <div className="mt-0.5 flex flex-wrap gap-1">
-                          {part.tags.map((t) => (
-                            <TagBadge key={t} tag={t} />
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{part.kcal}</td>
+                  <td className="hidden px-2 py-1.5 text-[12px] text-muted-foreground sm:table-cell">{formatAmount(part, amount)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{Math.round(part.kcal * factor)}</td>
                   <td className="hidden px-2 py-1.5 text-right tabular-nums whitespace-nowrap md:table-cell">{fmtMinutes(part.minutes)}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(part.price)}</td>
+                  <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(part.price * factor)}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-6 text-center text-sm text-muted-foreground">
                     An empty bowl. Bold.
                   </td>
                 </tr>
