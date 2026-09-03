@@ -1,5 +1,5 @@
-import { byId, type PartBase, type Tag } from '../../shared/ingredients'
-import type { Bowl } from '@/store/bowl'
+import { byId, scaleFactor, type PartBase, type Slot } from '../../shared/ingredients'
+import { AMOUNT_KEY, type Bowl } from '../../shared/bowl'
 
 export type Totals = {
   price: number
@@ -15,54 +15,71 @@ export type Totals = {
   /** 0–100, drives the sheen in the renderer */
   richness: number
   diet: 'vegan' | 'vegetarian' | 'omnivore'
-  tags: Tag[]
+  gluten: boolean
   partCount: number
   complete: boolean
 }
 
+export type PartLine = { slot: Slot; part: PartBase; amount: number | undefined; factor: number }
+
+/** Every chosen part with its amount and scale factor, in build-sheet order. */
+export function linesOf(bowl: Bowl): PartLine[] {
+  const lines: PartLine[] = []
+  const single = (slot: Exclude<Slot, 'topping'>, id: string | null) => {
+    const part = id ? (byId[slot][id] as PartBase | undefined) : undefined
+    if (!part) return
+    const amount = bowl[AMOUNT_KEY[slot]]
+    lines.push({ slot, part, amount, factor: scaleFactor(part, amount) })
+  }
+  single('broth', bowl.brothId)
+  single('tare', bowl.tareId)
+  single('noodle', bowl.noodleId)
+  single('oil', bowl.oilId)
+  for (const t of bowl.toppings) {
+    const part = byId.topping[t.toppingId]
+    if (part) lines.push({ slot: 'topping', part, amount: t.qty, factor: scaleFactor(part, t.qty) })
+  }
+  return lines
+}
+
 export function partsOf(bowl: Bowl): PartBase[] {
-  const parts: PartBase[] = []
-  if (bowl.brothId) parts.push(byId.broth[bowl.brothId])
-  if (bowl.tareId) parts.push(byId.tare[bowl.tareId])
-  if (bowl.noodleId) parts.push(byId.noodle[bowl.noodleId])
-  if (bowl.oilId) parts.push(byId.oil[bowl.oilId])
-  for (const t of bowl.toppings) parts.push(byId.topping[t.toppingId])
-  return parts.filter(Boolean)
+  return linesOf(bowl).map((l) => l.part)
 }
 
 export function computeTotals(bowl: Bowl): Totals {
-  const parts = partsOf(bowl)
+  const lines = linesOf(bowl)
   const broth = bowl.brothId ? byId.broth[bowl.brothId] : null
   const tare = bowl.tareId ? byId.tare[bowl.tareId] : null
   const oil = bowl.oilId ? byId.oil[bowl.oilId] : null
-  const tops = bowl.toppings.map((t) => byId.topping[t.toppingId])
+  const oilFactor = oil ? scaleFactor(oil, bowl.oilMl) : 0
+  const topLines = lines.filter((l) => l.slot === 'topping')
 
-  const sum = (k: 'price' | 'minutes' | 'kcal' | 'sodium') => parts.reduce((a, p) => a + p[k], 0)
+  const scaled = (k: 'price' | 'kcal' | 'sodium') => lines.reduce((a, l) => a + l.part[k] * l.factor, 0)
 
   const bodyCapacity = (broth?.richness ?? 0) + (tare?.bodyBonus ?? 0)
-  const bodyLoad = tops.reduce((a, t) => a + t.weight, 0) + (oil?.fat ?? 0)
-  const spice = Math.min(3, (tare?.spice ?? 0) + (oil?.spice ?? 0) + tops.reduce((a, t) => a + t.spice, 0))
-  const richness = Math.min(100, (broth?.richness ?? 0) * 0.7 + (oil?.fat ?? 0) + Math.min(30, bodyLoad * 0.4))
+  const bodyLoad = Math.round(topLines.reduce((a, l) => a + byId.topping[l.part.id].weight * l.factor, 0) + (oil?.fat ?? 0) * oilFactor)
+  const spice = Math.min(3, (tare?.spice ?? 0) + (oil?.spice ?? 0) + topLines.reduce((a, l) => a + byId.topping[l.part.id].spice, 0))
+  const richness = Math.min(100, (broth?.richness ?? 0) * 0.7 + (oil?.fat ?? 0) * oilFactor + Math.min(30, bodyLoad * 0.4))
 
-  const tags = [...new Set(parts.flatMap((p) => p.tags))]
+  const parts = lines.map((l) => l.part)
   const diet: Totals['diet'] =
-    parts.length > 0 && parts.every((p) => p.tags.includes('vegan'))
+    parts.length > 0 && parts.every((p) => p.diet === 'plant')
       ? 'vegan'
-      : parts.length > 0 && parts.every((p) => p.tags.includes('vegan') || p.tags.includes('vegetarian'))
+      : parts.length > 0 && parts.every((p) => p.diet === 'plant' || p.diet === 'egg' || p.diet === 'dairy')
         ? 'vegetarian'
         : 'omnivore'
 
   return {
-    price: sum('price'),
-    minutes: sum('minutes'),
-    kcal: sum('kcal'),
-    sodium: sum('sodium'),
+    price: Math.round(scaled('price') * 100) / 100,
+    minutes: lines.reduce((a, l) => a + l.part.minutes, 0),
+    kcal: Math.round(scaled('kcal')),
+    sodium: Math.round(scaled('sodium')),
     bodyCapacity,
     bodyLoad,
     spice,
     richness,
     diet,
-    tags,
+    gluten: parts.some((p) => p.gluten),
     partCount: parts.length,
     complete: !!(bowl.brothId && bowl.tareId && bowl.noodleId),
   }

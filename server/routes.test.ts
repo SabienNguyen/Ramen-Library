@@ -32,7 +32,8 @@ const bowl = {
   tareId: 'shio',
   noodleId: 'thin',
   oilId: null,
-  toppings: [],
+  brothMl: 500,
+  toppings: [{ key: 'a', toppingId: 'chashu', x: 0, y: 0, rotation: 0, qty: 3 }],
 }
 
 function cookieFrom(res: Response): string {
@@ -256,6 +257,22 @@ describe('server routes', () => {
     expect(body.build.comments[0].id).toBe(commentId)
     expect(body.build.comments[0].author.id).toBe(userId)
     expect(body.build.author.bio).toBeNull()
+    expect(body.build.bowl.brothMl).toBe(500)
+    expect(body.build.bowl.toppings[0].qty).toBe(3)
+  })
+
+  test('out-of-range amount is rejected with the part name', async () => {
+    const res = await app.handle(
+      req('/api/builds', {
+        method: 'POST',
+        cookie,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: 'Bad Bowl', description: '', bowl: { ...bowl, brothMl: 900 } }),
+      }),
+    )
+    expect(res.status).toBe(400)
+    const body = await json(res)
+    expect(body.error).toContain('Tonkotsu')
   })
 
   test('POST /api/forum/threads creates a thread', async () => {

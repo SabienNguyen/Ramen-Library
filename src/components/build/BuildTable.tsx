@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { Plus, RefreshCw, X } from 'lucide-react'
-import { byId, slotMeta, type PartBase, type Slot } from '../../../shared/ingredients'
+import { byId, scaleFactor, slotMeta, type PartBase, type Slot } from '../../../shared/ingredients'
+import { AMOUNT_KEY } from '../../../shared/bowl'
 import type { Issue } from '@/lib/compat'
 import { fmtMinutes, fmtPrice } from '@/lib/totals'
 import { cn } from '@/lib/utils'
 import { MAX_TOPPINGS, slotKey, useBowlStore } from '@/store/bowl'
 import { Button } from '@/components/ui/button'
-import { PartPickerDialog, TagBadge } from './PartPickerDialog'
+import { PartPickerDialog } from './PartPickerDialog'
 import { PartSwatch } from './PartSwatch'
+import { AmountControl } from './AmountControl'
 
 const SINGLE_SLOTS = ['broth', 'tare', 'noodle', 'oil'] as const
 
 /** The build sheet: one row per slot, PCPartPicker style. */
 export function BuildTable({ issues, className }: { issues: Issue[]; className?: string }) {
   const bowl = useBowlStore((s) => s.bowl)
-  const { setPart, addTopping, removeTopping } = useBowlStore()
+  const { setPart, addTopping, removeTopping, setAmount, setToppingQty } = useBowlStore()
   const [picker, setPicker] = useState<Slot | null>(null)
 
   const flag = (slot: Slot): Issue['level'] | null => {
@@ -32,6 +34,7 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
             <tr className="[&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th]:py-1 [&>th]:text-left [&>th]:font-semibold">
               <th className="w-36">Component</th>
               <th>Selection</th>
+              <th className="w-40">Amount</th>
               <th className="w-16 text-right!">kcal</th>
               <th className="hidden w-20 text-right! md:table-cell">Sodium</th>
               <th className="w-20 text-right!">Time</th>
@@ -44,7 +47,16 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
               const id = bowl[slotKey[slot]] as string | null
               const part = id ? (byId[slot][id] as PartBase) : null
               return (
-                <Row key={slot} slot={slot} flag={flag(slot)} part={part} onChoose={() => setPicker(slot)} onRemove={part ? () => setPart(slot, null) : undefined} />
+                <Row
+                  key={slot}
+                  slot={slot}
+                  flag={flag(slot)}
+                  part={part}
+                  amount={bowl[AMOUNT_KEY[slot]]}
+                  onAmount={(v) => setAmount(slot, v)}
+                  onChoose={() => setPicker(slot)}
+                  onRemove={part ? () => setPart(slot, null) : undefined}
+                />
               )
             })}
 
@@ -55,6 +67,8 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
                   label={i === 0 ? undefined : ''}
                   flag={flag('topping')}
                   part={byId.topping[t.toppingId]}
+                  amount={t.qty}
+                  onAmount={(v) => setToppingQty(t.key, v)}
                   onChoose={() => setPicker('topping')}
                   onRemove={() => removeTopping(t.key)}
                 />
@@ -64,7 +78,7 @@ export function BuildTable({ issues, className }: { issues: Issue[]; className?:
               <td className="px-2 py-1.5 align-top">
                 {bowl.toppings.length === 0 && <SlotLabel slot="topping" />}
               </td>
-              <td colSpan={6} className="px-2 py-1.5">
+              <td colSpan={7} className="px-2 py-1.5">
                 <Button variant="outline" size="sm" onClick={() => setPicker('topping')} disabled={bowl.toppings.length >= MAX_TOPPINGS}>
                   <Plus /> {bowl.toppings.length ? 'Add another topping' : 'Choose toppings'}
                 </Button>
@@ -112,6 +126,8 @@ function Row({
   label,
   flag,
   part,
+  amount,
+  onAmount,
   onChoose,
   onRemove,
 }: {
@@ -119,9 +135,12 @@ function Row({
   label?: string
   flag: Issue['level'] | null
   part: PartBase | null
+  amount: number | undefined
+  onAmount: (v: number | undefined) => void
   onChoose: () => void
   onRemove?: () => void
 }) {
+  const f = part ? scaleFactor(part, amount) : 1
   return (
     <tr
       className={cn(
@@ -141,18 +160,16 @@ function Row({
                   <span className="font-semibold">{part.name}</span>
                   {part.jp && <span className="text-[11px] text-muted-foreground">{part.jp}</span>}
                 </div>
-                <div className="mt-0.5 flex flex-wrap gap-1">
-                  {part.tags.map((t) => (
-                    <TagBadge key={t} tag={t} />
-                  ))}
-                </div>
               </div>
             </div>
           </td>
-          <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{part.kcal}</td>
-          <td className="hidden px-2 py-1.5 text-right tabular-nums whitespace-nowrap md:table-cell">{part.sodium}</td>
+          <td className="px-2 py-1.5">
+            <AmountControl part={part} value={amount} onChange={onAmount} />
+          </td>
+          <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{Math.round(part.kcal * f)}</td>
+          <td className="hidden px-2 py-1.5 text-right tabular-nums whitespace-nowrap md:table-cell">{Math.round(part.sodium * f)}</td>
           <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{fmtMinutes(part.minutes)}</td>
-          <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{fmtPrice(part.price)}</td>
+          <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">{fmtPrice(part.price * f)}</td>
           <td className="px-1 py-1.5">
             <div className="flex justify-end gap-1">
               {slot !== 'topping' && (
@@ -169,7 +186,7 @@ function Row({
           </td>
         </>
       ) : (
-        <td colSpan={6} className="px-2 py-1.5">
+        <td colSpan={7} className="px-2 py-1.5">
           <Button variant="outline" size="sm" onClick={onChoose}>
             <Plus /> Choose {slot === 'oil' ? 'an aroma oil' : slot === 'noodle' ? 'noodles' : `a ${slotMeta[slot].label.toLowerCase()}`}
           </Button>

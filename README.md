@@ -227,7 +227,7 @@ Env vars: `TRUST_PROXY=1` makes the app trust the first `X-Forwarded-For` entry 
 
 ## Adding a part
 
-Append to the right array in `shared/ingredients.ts` with its specs. A new topping also needs a glyph in `src/components/bowl/ToppingGlyph.tsx` (60×60 viewBox). Add a rule to `src/lib/compat.ts` if the part has opinions about what it pairs with.
+Append to the right array in `shared/ingredients.ts` with its specs. Give it a `diet` category, `gluten`, and a `serving` (ml, g, pieces, or three named portion levels); price, kcal and sodium are for that default serving. A new topping also needs a glyph in `src/components/bowl/ToppingGlyph.tsx` (60×60 viewBox). Add a rule to `src/lib/compat.ts` if the part has opinions about what it pairs with.
 
 ## Roadmap ideas
 
