@@ -22,7 +22,7 @@ export const bowlSchema = z.object({
     .max(MAX_TOPPINGS),
 })
 
-const uploadUrl = z.string().regex(/^\/uploads\/[a-z0-9-]+(\.thumb)?\.webp$/, 'not an upload')
+const uploadUrl = z.string().regex(/^(?:\/uploads\/|https?:\/\/[^/]+\/)[a-z0-9-]+(\.thumb)?\.webp$/, 'not an upload')
 const templateId = z.enum(COVER_TEMPLATES.map((t) => t.id) as [string, ...string[]])
 
 export const coverSchema = z.object({

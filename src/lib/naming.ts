@@ -1,4 +1,4 @@
-import { byId } from '@/data/ingredients'
+import { byId } from '../../shared/ingredients'
 import type { Bowl } from '@/store/bowl'
 import { computeTotals } from './totals'
 

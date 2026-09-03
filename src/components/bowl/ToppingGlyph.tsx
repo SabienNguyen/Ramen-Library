@@ -1,4 +1,4 @@
-import type { ToppingGlyph as GlyphId } from '@/data/ingredients'
+import type { ToppingGlyph as GlyphId } from '../../../shared/ingredients'
 
 /**
  * Hand-drawn-ish SVG glyphs for each topping. All share a 60×60 viewBox and

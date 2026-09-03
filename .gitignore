@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 # SQLite database files
 data/
+
+# Environment variables
+.env

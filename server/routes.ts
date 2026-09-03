@@ -1,306 +1,688 @@
-import { zValidator as zv } from '@hono/zod-validator'
-import { createMiddleware } from 'hono/factory'
-import type { ZodType } from 'zod'
-import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
-import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
-import type { auth } from './auth'
+import { Elysia, t } from 'elysia'
+import { sql } from 'kysely'
 import { db } from './db/client'
-import { buildComments, buildLikes, builds, posts, threads, user } from './db/schema'
-import { commentSchema, postSchema, profileSchema, publishBuildSchema, threadSchema, updateBuildSchema } from '../shared/validation'
+import { ApiError } from './errors'
+import { session } from './session'
 import { saveUpload } from './uploads'
-
-type Session = typeof auth.$Infer.Session
-export type Env = { Variables: { user: Session['user'] | null; session: Session['session'] | null } }
-
-export const api = new Hono<Env>()
+import { isOwnUploadUrl } from './storage'
+import {
+  commentSchema,
+  postSchema,
+  profileSchema,
+  publishBuildSchema,
+  threadSchema,
+  updateBuildSchema,
+} from '../shared/validation'
 
 const uid = () => crypto.randomUUID()
-const authorCols = { id: true, name: true, image: true } as const
 
-function requireUser(c: { get: (k: 'user') => Session['user'] | null }) {
-  const u = c.get('user')
-  if (!u) throw new HTTPException(401, { message: 'Sign in to do that.' })
-  return u
+/** Throws if `imageUrl`/`thumbUrl` are set but don't point at this deployment's own upload storage. */
+function assertOwnUploadUrls(body: { imageUrl?: string | null; thumbUrl?: string | null }): void {
+  for (const [field, value] of [
+    ['imageUrl', body.imageUrl],
+    ['thumbUrl', body.thumbUrl],
+  ] as const) {
+    if (typeof value === 'string' && !isOwnUploadUrl(value)) {
+      throw new ApiError(400, `${field}: not an upload`)
+    }
+  }
 }
 
-/** 401 before any body parsing, so anonymous writes get a clear answer. */
-const authed = createMiddleware<Env>(async (c, next) => {
-  requireUser(c)
-  await next()
-})
+const AUTHOR_COLS = ['user.id as author_id', 'user.name as author_name', 'user.image as author_image'] as const
 
-/** zod-validator with a readable first-error message instead of a ZodError dump. */
-const zValidator = <T extends ZodType>(schema: T) =>
-  zv('json', schema, (result, c) => {
-    if (!result.success) {
-      const issue = result.error.issues[0]
-      const path = issue?.path?.length ? `${issue.path.join('.')}: ` : ''
-      return c.json({ error: `${path}${issue?.message ?? 'Invalid input.'}` }, 400)
-    }
-  })
+interface AuthorRow {
+  author_id: string
+  author_name: string
+  author_image: string | null
+}
 
-api.onError((err, c) => {
-  if (err instanceof HTTPException) return c.json({ error: err.message }, err.status)
-  console.error(err)
-  return c.json({ error: 'Something went wrong.' }, 500)
-})
+function toAuthor(row: AuthorRow) {
+  return { id: row.author_id, name: row.author_name, image: row.author_image }
+}
 
-/* ---------------------------------- me ---------------------------------- */
+interface BuildRow extends AuthorRow {
+  id: string
+  user_id: string
+  name: string
+  description: string
+  bowl: string
+  image_url: string | null
+  thumb_url: string | null
+  template_id: string | null
+  created_at: number
+  updated_at: number
+}
 
-api.get('/me', (c) => c.json({ user: c.get('user') }))
+function toBuildItem(row: BuildRow, likeCount: number, commentCount: number, likedByMe: boolean) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    description: row.description,
+    bowl: JSON.parse(row.bowl),
+    imageUrl: row.image_url,
+    thumbUrl: row.thumb_url,
+    templateId: row.template_id,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+    author: toAuthor(row),
+    likeCount,
+    commentCount,
+    likedByMe,
+  }
+}
 
-api.patch('/me', authed, zValidator(profileSchema), async (c) => {
-  const u = requireUser(c)
-  const body = c.req.valid('json')
-  await db.update(user).set({ name: body.name, bio: body.bio }).where(eq(user.id, u.id))
-  return c.json({ ok: true })
-})
+interface CommentRow extends AuthorRow {
+  id: string
+  build_id: string
+  user_id: string
+  body: string
+  created_at: number
+}
 
-/* -------------------------------- builds -------------------------------- */
+function toComment(row: CommentRow) {
+  return {
+    id: row.id,
+    buildId: row.build_id,
+    userId: row.user_id,
+    body: row.body,
+    createdAt: new Date(row.created_at).toISOString(),
+    author: toAuthor(row),
+  }
+}
+
+interface ThreadRow extends AuthorRow {
+  id: string
+  user_id: string
+  category: string
+  title: string
+  body: string
+  created_at: number
+  last_activity_at: number
+}
+
+function toThreadItem(row: ThreadRow, replyCount: number, bodyLimit: number) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    category: row.category,
+    title: row.title,
+    body: row.body.slice(0, bodyLimit),
+    createdAt: new Date(row.created_at).toISOString(),
+    lastActivityAt: new Date(row.last_activity_at).toISOString(),
+    author: toAuthor(row),
+    replyCount,
+  }
+}
+
+function toThreadDetail(row: ThreadRow) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    category: row.category,
+    title: row.title,
+    body: row.body,
+    createdAt: new Date(row.created_at).toISOString(),
+    lastActivityAt: new Date(row.last_activity_at).toISOString(),
+    author: toAuthor(row),
+  }
+}
+
+interface PostRow extends AuthorRow {
+  id: string
+  thread_id: string
+  user_id: string
+  body: string
+  created_at: number
+}
+
+function toPost(row: PostRow) {
+  return {
+    id: row.id,
+    threadId: row.thread_id,
+    userId: row.user_id,
+    body: row.body,
+    createdAt: new Date(row.created_at).toISOString(),
+    author: toAuthor(row),
+  }
+}
 
 async function countsFor(buildIds: string[]) {
   if (buildIds.length === 0) return { likes: new Map<string, number>(), comments: new Map<string, number>() }
-  const likeRows = await db.select({ id: buildLikes.buildId, n: count() }).from(buildLikes).where(inArray(buildLikes.buildId, buildIds)).groupBy(buildLikes.buildId)
-  const commentRows = await db.select({ id: buildComments.buildId, n: count() }).from(buildComments).where(inArray(buildComments.buildId, buildIds)).groupBy(buildComments.buildId)
+  const likeRows = await db
+    .selectFrom('build_likes')
+    .select(['build_id', sql<number>`count(*)`.as('n')])
+    .where('build_id', 'in', buildIds)
+    .groupBy('build_id')
+    .execute()
+  const commentRows = await db
+    .selectFrom('build_comments')
+    .select(['build_id', sql<number>`count(*)`.as('n')])
+    .where('build_id', 'in', buildIds)
+    .groupBy('build_id')
+    .execute()
   return {
-    likes: new Map(likeRows.map((r) => [r.id, r.n])),
-    comments: new Map(commentRows.map((r) => [r.id, r.n])),
+    likes: new Map(likeRows.map((r) => [r.build_id, Number(r.n)])),
+    comments: new Map(commentRows.map((r) => [r.build_id, Number(r.n)])),
   }
 }
 
 async function likedSet(userId: string | undefined, buildIds: string[]) {
   if (!userId || buildIds.length === 0) return new Set<string>()
-  const rows = await db.select({ id: buildLikes.buildId }).from(buildLikes).where(and(eq(buildLikes.userId, userId), inArray(buildLikes.buildId, buildIds)))
-  return new Set(rows.map((r) => r.id))
+  const rows = await db
+    .selectFrom('build_likes')
+    .select(['build_id'])
+    .where('user_id', '=', userId)
+    .where('build_id', 'in', buildIds)
+    .execute()
+  return new Set(rows.map((r) => r.build_id))
 }
 
-api.get('/builds', async (c) => {
-  const sort = c.req.query('sort') === 'top' ? 'top' : 'new'
-  const userId = c.req.query('user')
-  const limit = Math.min(60, Number(c.req.query('limit') ?? 24))
+async function replyCounts(threadIds: string[]) {
+  if (threadIds.length === 0) return new Map<string, number>()
+  const rows = await db
+    .selectFrom('forum_posts')
+    .select(['thread_id', sql<number>`count(*)`.as('n')])
+    .where('thread_id', 'in', threadIds)
+    .groupBy('thread_id')
+    .execute()
+  return new Map(rows.map((r) => [r.thread_id, Number(r.n)]))
+}
 
-  const rows = await db.query.builds.findMany({
-    where: userId ? eq(builds.userId, userId) : undefined,
-    orderBy: [desc(builds.createdAt)],
-    limit: sort === 'top' ? 200 : limit,
-    with: { author: { columns: authorCols } },
+/** Requires an authenticated session before any body validation runs. Registered as a
+ * `transform` hook (not `beforeHandle`), because Elysia validates `body`/`query`/`params`
+ * before running `beforeHandle` hooks but after `transform` hooks — so an anonymous
+ * request with an invalid body still gets a clean 401 instead of a 400. */
+function requireAuth({ user }: { user: { id: string } | null }) {
+  if (!user) throw new ApiError(401, 'Sign in to do that.')
+}
+
+export const api = new Elysia({ prefix: '/api' })
+  .use(session)
+
+  /* ---------------------------------- me ---------------------------------- */
+
+  .get('/me', ({ user }) => ({ user }))
+
+  .guard({ transform: requireAuth }, (app) =>
+    app
+      .patch(
+        '/me',
+        async ({ user, body }) => {
+          await db.updateTable('user').set({ name: body.name, bio: body.bio }).where('id', '=', user!.id).execute()
+          return { ok: true }
+        },
+        { body: profileSchema },
+      )
+
+      /* -------------------------------- builds -------------------------------- */
+
+      .post(
+        '/builds',
+        async ({ user, body, set }) => {
+          assertOwnUploadUrls(body)
+          const id = uid()
+          const now = Date.now()
+          await db
+            .insertInto('builds')
+            .values({
+              id,
+              user_id: user!.id,
+              name: body.name,
+              description: body.description,
+              bowl: JSON.stringify(body.bowl),
+              image_url: body.imageUrl ?? null,
+              thumb_url: body.thumbUrl ?? null,
+              template_id: body.templateId ?? null,
+              created_at: now,
+              updated_at: now,
+            })
+            .execute()
+          set.status = 201
+          return { id }
+        },
+        { body: publishBuildSchema },
+      )
+
+      .patch(
+        '/builds/:id',
+        async ({ user, params, body }) => {
+          assertOwnUploadUrls(body)
+          const row = await db.selectFrom('builds').select(['user_id']).where('id', '=', params.id).executeTakeFirst()
+          if (!row) throw new ApiError(404, 'Build not found.')
+          if (row.user_id !== user!.id) throw new ApiError(403, 'Not your build.')
+          await db
+            .updateTable('builds')
+            .set({
+              ...(body.name !== undefined ? { name: body.name } : {}),
+              ...(body.description !== undefined ? { description: body.description } : {}),
+              ...(body.imageUrl !== undefined ? { image_url: body.imageUrl } : {}),
+              ...(body.thumbUrl !== undefined ? { thumb_url: body.thumbUrl } : {}),
+              ...(body.templateId !== undefined ? { template_id: body.templateId } : {}),
+              updated_at: Date.now(),
+            })
+            .where('id', '=', params.id)
+            .execute()
+          return { ok: true }
+        },
+        { body: updateBuildSchema },
+      )
+
+      .delete('/builds/:id', async ({ user, params }) => {
+        const row = await db.selectFrom('builds').select(['user_id']).where('id', '=', params.id).executeTakeFirst()
+        if (!row) throw new ApiError(404, 'Build not found.')
+        if (row.user_id !== user!.id) throw new ApiError(403, 'Not your build.')
+        await db.deleteFrom('builds').where('id', '=', params.id).execute()
+        return { ok: true }
+      })
+
+      .post('/builds/:id/like', async ({ user, params }) => {
+        const exists = await db.selectFrom('builds').select(['id']).where('id', '=', params.id).executeTakeFirst()
+        if (!exists) throw new ApiError(404, 'Build not found.')
+        const already = await db
+          .selectFrom('build_likes')
+          .select(['build_id'])
+          .where('build_id', '=', params.id)
+          .where('user_id', '=', user!.id)
+          .executeTakeFirst()
+        if (already) {
+          await db
+            .deleteFrom('build_likes')
+            .where('build_id', '=', params.id)
+            .where('user_id', '=', user!.id)
+            .execute()
+        } else {
+          await db.insertInto('build_likes').values({ build_id: params.id, user_id: user!.id, created_at: Date.now() }).execute()
+        }
+        const row = await db
+          .selectFrom('build_likes')
+          .select(sql<number>`count(*)`.as('n'))
+          .where('build_id', '=', params.id)
+          .executeTakeFirstOrThrow()
+        return { liked: !already, likeCount: Number(row.n) }
+      })
+
+      .post(
+        '/builds/:id/comments',
+        async ({ user, params, body, set }) => {
+          const exists = await db.selectFrom('builds').select(['id']).where('id', '=', params.id).executeTakeFirst()
+          if (!exists) throw new ApiError(404, 'Build not found.')
+          const commentId = uid()
+          await db
+            .insertInto('build_comments')
+            .values({ id: commentId, build_id: params.id, user_id: user!.id, body: body.body, created_at: Date.now() })
+            .execute()
+          set.status = 201
+          return { id: commentId }
+        },
+        { body: commentSchema },
+      )
+
+      .delete('/comments/:id', async ({ user, params }) => {
+        const row = await db.selectFrom('build_comments').select(['user_id']).where('id', '=', params.id).executeTakeFirst()
+        if (!row) throw new ApiError(404, 'Comment not found.')
+        if (row.user_id !== user!.id) throw new ApiError(403, 'Not your comment.')
+        await db.deleteFrom('build_comments').where('id', '=', params.id).execute()
+        return { ok: true }
+      })
+
+      /* -------------------------------- uploads ------------------------------- */
+
+      .post(
+        '/uploads',
+        async ({ body, set }) => {
+          const result = await saveUpload(body.file)
+          set.status = 201
+          return result
+        },
+        { body: t.Object({ file: t.File() }) },
+      )
+
+      /* --------------------------------- forum -------------------------------- */
+
+      .post(
+        '/forum/threads',
+        async ({ user, body, set }) => {
+          const id = uid()
+          const now = Date.now()
+          await db
+            .insertInto('forum_threads')
+            .values({
+              id,
+              user_id: user!.id,
+              category: body.category,
+              title: body.title,
+              body: body.body,
+              created_at: now,
+              last_activity_at: now,
+            })
+            .execute()
+          set.status = 201
+          return { id }
+        },
+        { body: threadSchema },
+      )
+
+      .delete('/forum/threads/:id', async ({ user, params }) => {
+        const row = await db.selectFrom('forum_threads').select(['user_id']).where('id', '=', params.id).executeTakeFirst()
+        if (!row) throw new ApiError(404, 'Thread not found.')
+        if (row.user_id !== user!.id) throw new ApiError(403, 'Not your thread.')
+        await db.deleteFrom('forum_threads').where('id', '=', params.id).execute()
+        return { ok: true }
+      })
+
+      .post(
+        '/forum/threads/:id/posts',
+        async ({ user, params, body, set }) => {
+          const exists = await db.selectFrom('forum_threads').select(['id']).where('id', '=', params.id).executeTakeFirst()
+          if (!exists) throw new ApiError(404, 'Thread not found.')
+          const id = uid()
+          await db
+            .insertInto('forum_posts')
+            .values({ id, thread_id: params.id, user_id: user!.id, body: body.body, created_at: Date.now() })
+            .execute()
+          await db.updateTable('forum_threads').set({ last_activity_at: Date.now() }).where('id', '=', params.id).execute()
+          set.status = 201
+          return { id }
+        },
+        { body: postSchema },
+      )
+
+      .delete('/forum/posts/:id', async ({ user, params }) => {
+        const row = await db.selectFrom('forum_posts').select(['user_id']).where('id', '=', params.id).executeTakeFirst()
+        if (!row) throw new ApiError(404, 'Post not found.')
+        if (row.user_id !== user!.id) throw new ApiError(403, 'Not your post.')
+        await db.deleteFrom('forum_posts').where('id', '=', params.id).execute()
+        return { ok: true }
+      }),
+  )
+
+  /* -------------------------------- builds (reads) ------------------------- */
+
+  .get('/builds', async ({ query, user }) => {
+    const sort = query.sort === 'top' ? 'top' : 'new'
+    const userId = query.user
+    const parsedLimit = Number(query.limit ?? 24)
+    const limit = Math.min(60, Math.max(1, Number.isFinite(parsedLimit) ? parsedLimit : 24))
+
+    let q = db
+      .selectFrom('builds')
+      .innerJoin('user', 'user.id', 'builds.user_id')
+      .select([
+        'builds.id',
+        'builds.user_id',
+        'builds.name',
+        'builds.description',
+        'builds.bowl',
+        'builds.image_url',
+        'builds.thumb_url',
+        'builds.template_id',
+        'builds.created_at',
+        'builds.updated_at',
+        ...AUTHOR_COLS,
+      ])
+      .orderBy('builds.created_at', 'desc')
+      .limit(sort === 'top' ? 200 : limit)
+    if (userId) q = q.where('builds.user_id', '=', userId)
+    const rows = (await q.execute()) as unknown as BuildRow[]
+
+    const ids = rows.map((r) => r.id)
+    const [counts, liked] = await Promise.all([countsFor(ids), likedSet(user?.id, ids)])
+    let items = rows.map((r) =>
+      toBuildItem(r, counts.likes.get(r.id) ?? 0, counts.comments.get(r.id) ?? 0, liked.has(r.id)),
+    )
+    if (sort === 'top') {
+      items = items
+        .sort((a, b) => b.likeCount - a.likeCount || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit)
+    }
+    return { items }
   })
-  const ids = rows.map((r) => r.id)
-  const [counts, liked] = await Promise.all([countsFor(ids), likedSet(c.get('user')?.id, ids)])
-  let items = rows.map((r) => ({
-    ...r,
-    likeCount: counts.likes.get(r.id) ?? 0,
-    commentCount: counts.comments.get(r.id) ?? 0,
-    likedByMe: liked.has(r.id),
-  }))
-  if (sort === 'top') items = items.sort((a, b) => b.likeCount - a.likeCount || b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit)
-  return c.json({ items })
-})
 
-api.post('/builds', authed, zValidator(publishBuildSchema), async (c) => {
-  const u = requireUser(c)
-  const body = c.req.valid('json')
-  const id = uid()
-  await db.insert(builds).values({
-    id,
-    userId: u.id,
-    name: body.name,
-    description: body.description,
-    bowl: body.bowl,
-    imageUrl: body.imageUrl ?? null,
-    thumbUrl: body.thumbUrl ?? null,
-    templateId: body.templateId ?? null,
+  .get('/builds/:id', async ({ params, user }) => {
+    const row = (await db
+      .selectFrom('builds')
+      .innerJoin('user', 'user.id', 'builds.user_id')
+      .select([
+        'builds.id',
+        'builds.user_id',
+        'builds.name',
+        'builds.description',
+        'builds.bowl',
+        'builds.image_url',
+        'builds.thumb_url',
+        'builds.template_id',
+        'builds.created_at',
+        'builds.updated_at',
+        ...AUTHOR_COLS,
+        'user.bio as author_bio',
+      ])
+      .where('builds.id', '=', params.id)
+      .executeTakeFirst()) as unknown as (BuildRow & { author_bio: string | null }) | undefined
+    if (!row) throw new ApiError(404, 'Build not found.')
+
+    const commentRows = (await db
+      .selectFrom('build_comments')
+      .innerJoin('user', 'user.id', 'build_comments.user_id')
+      .select([
+        'build_comments.id',
+        'build_comments.build_id',
+        'build_comments.user_id',
+        'build_comments.body',
+        'build_comments.created_at',
+        ...AUTHOR_COLS,
+      ])
+      .where('build_comments.build_id', '=', params.id)
+      .orderBy('build_comments.created_at', 'asc')
+      .execute()) as unknown as CommentRow[]
+
+    const [counts, liked] = await Promise.all([countsFor([params.id]), likedSet(user?.id, [params.id])])
+
+    return {
+      build: {
+        ...toBuildItem(row, counts.likes.get(params.id) ?? 0, commentRows.length, liked.has(params.id)),
+        author: { ...toAuthor(row), bio: row.author_bio },
+        comments: commentRows.map(toComment),
+      },
+    }
   })
-  return c.json({ id }, 201)
-})
 
-api.patch('/builds/:id', authed, zValidator(updateBuildSchema), async (c) => {
-  const u = requireUser(c)
-  const id = c.req.param('id')
-  const row = await db.query.builds.findFirst({ where: eq(builds.id, id), columns: { userId: true } })
-  if (!row) throw new HTTPException(404, { message: 'Build not found.' })
-  if (row.userId !== u.id) throw new HTTPException(403, { message: 'Not your build.' })
-  const body = c.req.valid('json')
-  await db.update(builds).set(body).where(eq(builds.id, id))
-  return c.json({ ok: true })
-})
+  /* --------------------------------- forum (reads) -------------------------- */
 
-/* -------------------------------- uploads ------------------------------- */
-
-api.post('/uploads', authed, async (c) => {
-  const form = await c.req.formData()
-  const file = form.get('file')
-  if (!(file instanceof File)) throw new HTTPException(400, { message: 'No file.' })
-  const result = await saveUpload(file)
-  return c.json(result, 201)
-})
-
-api.get('/builds/:id', async (c) => {
-  const id = c.req.param('id')
-  const row = await db.query.builds.findFirst({
-    where: eq(builds.id, id),
-    with: {
-      author: { columns: { ...authorCols, bio: true } },
-      comments: { with: { author: { columns: authorCols } }, orderBy: [buildComments.createdAt] },
-    },
+  .get('/forum/threads', async ({ query }) => {
+    const category = query.category
+    let q = db
+      .selectFrom('forum_threads')
+      .innerJoin('user', 'user.id', 'forum_threads.user_id')
+      .select([
+        'forum_threads.id',
+        'forum_threads.user_id',
+        'forum_threads.category',
+        'forum_threads.title',
+        'forum_threads.body',
+        'forum_threads.created_at',
+        'forum_threads.last_activity_at',
+        ...AUTHOR_COLS,
+      ])
+      .orderBy('forum_threads.last_activity_at', 'desc')
+      .limit(50)
+    if (category) q = q.where('forum_threads.category', '=', category)
+    const rows = (await q.execute()) as unknown as ThreadRow[]
+    const ids = rows.map((r) => r.id)
+    const replies = await replyCounts(ids)
+    return { items: rows.map((r) => toThreadItem(r, replies.get(r.id) ?? 0, 200)) }
   })
-  if (!row) throw new HTTPException(404, { message: 'Build not found.' })
-  const [counts, liked] = await Promise.all([countsFor([id]), likedSet(c.get('user')?.id, [id])])
-  return c.json({ build: { ...row, likeCount: counts.likes.get(id) ?? 0, commentCount: row.comments.length, likedByMe: liked.has(id) } })
-})
 
-api.delete('/builds/:id', authed, async (c) => {
-  const u = requireUser(c)
-  const id = c.req.param('id')
-  const row = await db.query.builds.findFirst({ where: eq(builds.id, id), columns: { userId: true } })
-  if (!row) throw new HTTPException(404, { message: 'Build not found.' })
-  if (row.userId !== u.id) throw new HTTPException(403, { message: 'Not your build.' })
-  await db.delete(builds).where(eq(builds.id, id))
-  return c.json({ ok: true })
-})
+  .get('/forum/threads/:id', async ({ params }) => {
+    const row = (await db
+      .selectFrom('forum_threads')
+      .innerJoin('user', 'user.id', 'forum_threads.user_id')
+      .select([
+        'forum_threads.id',
+        'forum_threads.user_id',
+        'forum_threads.category',
+        'forum_threads.title',
+        'forum_threads.body',
+        'forum_threads.created_at',
+        'forum_threads.last_activity_at',
+        ...AUTHOR_COLS,
+      ])
+      .where('forum_threads.id', '=', params.id)
+      .executeTakeFirst()) as unknown as ThreadRow | undefined
+    if (!row) throw new ApiError(404, 'Thread not found.')
 
-api.post('/builds/:id/like', authed, async (c) => {
-  const u = requireUser(c)
-  const id = c.req.param('id')
-  const exists = await db.query.builds.findFirst({ where: eq(builds.id, id), columns: { id: true } })
-  if (!exists) throw new HTTPException(404, { message: 'Build not found.' })
-  const already = await db.query.buildLikes.findFirst({ where: and(eq(buildLikes.buildId, id), eq(buildLikes.userId, u.id)) })
-  if (already) await db.delete(buildLikes).where(and(eq(buildLikes.buildId, id), eq(buildLikes.userId, u.id)))
-  else await db.insert(buildLikes).values({ buildId: id, userId: u.id })
-  const [{ n }] = await db.select({ n: count() }).from(buildLikes).where(eq(buildLikes.buildId, id))
-  return c.json({ liked: !already, likeCount: n })
-})
+    const postRows = (await db
+      .selectFrom('forum_posts')
+      .innerJoin('user', 'user.id', 'forum_posts.user_id')
+      .select([
+        'forum_posts.id',
+        'forum_posts.thread_id',
+        'forum_posts.user_id',
+        'forum_posts.body',
+        'forum_posts.created_at',
+        ...AUTHOR_COLS,
+      ])
+      .where('forum_posts.thread_id', '=', params.id)
+      .orderBy('forum_posts.created_at', 'asc')
+      .execute()) as unknown as PostRow[]
 
-api.post('/builds/:id/comments', authed, zValidator(commentSchema), async (c) => {
-  const u = requireUser(c)
-  const id = c.req.param('id')
-  const exists = await db.query.builds.findFirst({ where: eq(builds.id, id), columns: { id: true } })
-  if (!exists) throw new HTTPException(404, { message: 'Build not found.' })
-  const commentId = uid()
-  await db.insert(buildComments).values({ id: commentId, buildId: id, userId: u.id, body: c.req.valid('json').body })
-  return c.json({ id: commentId }, 201)
-})
-
-api.delete('/comments/:id', authed, async (c) => {
-  const u = requireUser(c)
-  const id = c.req.param('id')
-  const row = await db.query.buildComments.findFirst({ where: eq(buildComments.id, id), columns: { userId: true } })
-  if (!row) throw new HTTPException(404, { message: 'Comment not found.' })
-  if (row.userId !== u.id) throw new HTTPException(403, { message: 'Not your comment.' })
-  await db.delete(buildComments).where(eq(buildComments.id, id))
-  return c.json({ ok: true })
-})
-
-/* --------------------------------- forum -------------------------------- */
-
-api.get('/forum/threads', async (c) => {
-  const category = c.req.query('category')
-  const rows = await db.query.threads.findMany({
-    where: category ? eq(threads.category, category) : undefined,
-    orderBy: [desc(threads.lastActivityAt)],
-    limit: 50,
-    with: { author: { columns: authorCols } },
+    return { thread: { ...toThreadDetail(row), posts: postRows.map(toPost) } }
   })
-  const ids = rows.map((r) => r.id)
-  const replyRows = ids.length ? await db.select({ id: posts.threadId, n: count() }).from(posts).where(inArray(posts.threadId, ids)).groupBy(posts.threadId) : []
-  const replies = new Map(replyRows.map((r) => [r.id, r.n]))
-  return c.json({ items: rows.map((r) => ({ ...r, body: r.body.slice(0, 200), replyCount: replies.get(r.id) ?? 0 })) })
-})
 
-api.post('/forum/threads', authed, zValidator(threadSchema), async (c) => {
-  const u = requireUser(c)
-  const body = c.req.valid('json')
-  const id = uid()
-  await db.insert(threads).values({ id, userId: u.id, ...body })
-  return c.json({ id }, 201)
-})
+  /* --------------------------------- users -------------------------------- */
 
-api.get('/forum/threads/:id', async (c) => {
-  const row = await db.query.threads.findFirst({
-    where: eq(threads.id, c.req.param('id')),
-    with: {
-      author: { columns: authorCols },
-      posts: { with: { author: { columns: authorCols } }, orderBy: [posts.createdAt] },
-    },
+  .get('/users/:id', async ({ params, user }) => {
+    const profile = await db
+      .selectFrom('user')
+      .select(['id', 'name', 'image', 'bio', 'createdAt'])
+      .where('id', '=', params.id)
+      .executeTakeFirst()
+    if (!profile) throw new ApiError(404, 'User not found.')
+
+    const userBuilds = (await db
+      .selectFrom('builds')
+      .innerJoin('user', 'user.id', 'builds.user_id')
+      .select([
+        'builds.id',
+        'builds.user_id',
+        'builds.name',
+        'builds.description',
+        'builds.bowl',
+        'builds.image_url',
+        'builds.thumb_url',
+        'builds.template_id',
+        'builds.created_at',
+        'builds.updated_at',
+        ...AUTHOR_COLS,
+      ])
+      .where('builds.user_id', '=', params.id)
+      .orderBy('builds.created_at', 'desc')
+      .limit(30)
+      .execute()) as unknown as BuildRow[]
+    const ids = userBuilds.map((b) => b.id)
+
+    const [counts, liked, userThreads, postStats] = await Promise.all([
+      countsFor(ids),
+      likedSet(user?.id, ids),
+      db
+        .selectFrom('forum_threads')
+        .select(['id', 'title', 'category', 'created_at'])
+        .where('user_id', '=', params.id)
+        .orderBy('created_at', 'desc')
+        .limit(10)
+        .execute(),
+      db
+        .selectFrom('forum_posts')
+        .select(sql<number>`count(*)`.as('n'))
+        .where('user_id', '=', params.id)
+        .executeTakeFirstOrThrow(),
+    ])
+
+    return {
+      profile: {
+        id: profile.id,
+        name: profile.name,
+        image: profile.image,
+        bio: profile.bio,
+        createdAt: profile.createdAt,
+      },
+      builds: userBuilds.map((b) =>
+        toBuildItem(b, counts.likes.get(b.id) ?? 0, counts.comments.get(b.id) ?? 0, liked.has(b.id)),
+      ),
+      threads: userThreads.map((t) => ({
+        id: t.id,
+        title: t.title,
+        category: t.category,
+        createdAt: new Date(t.created_at).toISOString(),
+      })),
+      postCount: Number(postStats.n),
+    }
   })
-  if (!row) throw new HTTPException(404, { message: 'Thread not found.' })
-  return c.json({ thread: row })
-})
 
-api.delete('/forum/threads/:id', authed, async (c) => {
-  const u = requireUser(c)
-  const id = c.req.param('id')
-  const row = await db.query.threads.findFirst({ where: eq(threads.id, id), columns: { userId: true } })
-  if (!row) throw new HTTPException(404, { message: 'Thread not found.' })
-  if (row.userId !== u.id) throw new HTTPException(403, { message: 'Not your thread.' })
-  await db.delete(threads).where(eq(threads.id, id))
-  return c.json({ ok: true })
-})
+  /* ---------------------------------- home -------------------------------- */
 
-api.post('/forum/threads/:id/posts', authed, zValidator(postSchema), async (c) => {
-  const u = requireUser(c)
-  const threadId = c.req.param('id')
-  const exists = await db.query.threads.findFirst({ where: eq(threads.id, threadId), columns: { id: true } })
-  if (!exists) throw new HTTPException(404, { message: 'Thread not found.' })
-  const id = uid()
-  await db.insert(posts).values({ id, threadId, userId: u.id, body: c.req.valid('json').body })
-  await db.update(threads).set({ lastActivityAt: new Date() }).where(eq(threads.id, threadId))
-  return c.json({ id }, 201)
-})
+  .get('/home', async ({ user }) => {
+    const [buildCount, userCount, threadCount] = await Promise.all([
+      db.selectFrom('builds').select(sql<number>`count(*)`.as('n')).executeTakeFirstOrThrow(),
+      db.selectFrom('user').select(sql<number>`count(*)`.as('n')).executeTakeFirstOrThrow(),
+      db.selectFrom('forum_threads').select(sql<number>`count(*)`.as('n')).executeTakeFirstOrThrow(),
+    ])
 
-api.delete('/forum/posts/:id', authed, async (c) => {
-  const u = requireUser(c)
-  const id = c.req.param('id')
-  const row = await db.query.posts.findFirst({ where: eq(posts.id, id), columns: { userId: true } })
-  if (!row) throw new HTTPException(404, { message: 'Post not found.' })
-  if (row.userId !== u.id) throw new HTTPException(403, { message: 'Not your post.' })
-  await db.delete(posts).where(eq(posts.id, id))
-  return c.json({ ok: true })
-})
+    const recentBuilds = (await db
+      .selectFrom('builds')
+      .innerJoin('user', 'user.id', 'builds.user_id')
+      .select([
+        'builds.id',
+        'builds.user_id',
+        'builds.name',
+        'builds.description',
+        'builds.bowl',
+        'builds.image_url',
+        'builds.thumb_url',
+        'builds.template_id',
+        'builds.created_at',
+        'builds.updated_at',
+        ...AUTHOR_COLS,
+      ])
+      .orderBy('builds.created_at', 'desc')
+      .limit(6)
+      .execute()) as unknown as BuildRow[]
+    const ids = recentBuilds.map((b) => b.id)
+    const [counts, liked] = await Promise.all([countsFor(ids), likedSet(user?.id, ids)])
 
-/* --------------------------------- users -------------------------------- */
+    const recentThreads = (await db
+      .selectFrom('forum_threads')
+      .innerJoin('user', 'user.id', 'forum_threads.user_id')
+      .select([
+        'forum_threads.id',
+        'forum_threads.user_id',
+        'forum_threads.category',
+        'forum_threads.title',
+        'forum_threads.body',
+        'forum_threads.created_at',
+        'forum_threads.last_activity_at',
+        ...AUTHOR_COLS,
+      ])
+      .orderBy('forum_threads.last_activity_at', 'desc')
+      .limit(5)
+      .execute()) as unknown as ThreadRow[]
+    const threadIds = recentThreads.map((t) => t.id)
+    const replies = await replyCounts(threadIds)
 
-api.get('/users/:id', async (c) => {
-  const id = c.req.param('id')
-  const profile = await db.query.user.findFirst({ where: eq(user.id, id), columns: { id: true, name: true, image: true, bio: true, createdAt: true } })
-  if (!profile) throw new HTTPException(404, { message: 'User not found.' })
-  const userBuilds = await db.query.builds.findMany({ where: eq(builds.userId, id), orderBy: [desc(builds.createdAt)], limit: 30, with: { author: { columns: authorCols } } })
-  const ids = userBuilds.map((b) => b.id)
-  const [counts, liked, userThreads, [postStats]] = await Promise.all([
-    countsFor(ids),
-    likedSet(c.get('user')?.id, ids),
-    db.query.threads.findMany({ where: eq(threads.userId, id), orderBy: [desc(threads.createdAt)], limit: 10, columns: { id: true, title: true, category: true, createdAt: true } }),
-    db.select({ n: count() }).from(posts).where(eq(posts.userId, id)),
-  ])
-  return c.json({
-    profile,
-    builds: userBuilds.map((b) => ({ ...b, likeCount: counts.likes.get(b.id) ?? 0, commentCount: counts.comments.get(b.id) ?? 0, likedByMe: liked.has(b.id) })),
-    threads: userThreads,
-    postCount: postStats.n,
+    const topLike = await db
+      .selectFrom('build_likes')
+      .select(['build_id', sql<number>`count(*)`.as('n')])
+      .groupBy('build_id')
+      .orderBy(sql`count(*) desc`)
+      .limit(1)
+      .executeTakeFirst()
+
+    return {
+      stats: { builds: Number(buildCount.n), users: Number(userCount.n), threads: Number(threadCount.n) },
+      builds: recentBuilds.map((b) =>
+        toBuildItem(b, counts.likes.get(b.id) ?? 0, counts.comments.get(b.id) ?? 0, liked.has(b.id)),
+      ),
+      threads: recentThreads.map((t) => toThreadItem(t, replies.get(t.id) ?? 0, 160)),
+      topBuildId: topLike?.build_id ?? null,
+    }
   })
-})
-
-/* ---------------------------------- home -------------------------------- */
-
-api.get('/home', async (c) => {
-  const [buildCount, userCount, threadCount] = await Promise.all([
-    db.select({ n: count() }).from(builds),
-    db.select({ n: count() }).from(user),
-    db.select({ n: count() }).from(threads),
-  ])
-  const recentBuilds = await db.query.builds.findMany({ orderBy: [desc(builds.createdAt)], limit: 6, with: { author: { columns: authorCols } } })
-  const ids = recentBuilds.map((b) => b.id)
-  const [counts, liked] = await Promise.all([countsFor(ids), likedSet(c.get('user')?.id, ids)])
-  const recentThreads = await db.query.threads.findMany({ orderBy: [desc(threads.lastActivityAt)], limit: 5, with: { author: { columns: authorCols } } })
-  const threadIds = recentThreads.map((t) => t.id)
-  const replyRows = threadIds.length ? await db.select({ id: posts.threadId, n: count() }).from(posts).where(inArray(posts.threadId, threadIds)).groupBy(posts.threadId) : []
-  const replies = new Map(replyRows.map((r) => [r.id, r.n]))
-  const topLike = await db.select({ id: buildLikes.buildId, n: count() }).from(buildLikes).groupBy(buildLikes.buildId).orderBy(sql`count(*) desc`).limit(1)
-  return c.json({
-    stats: { builds: buildCount[0].n, users: userCount[0].n, threads: threadCount[0].n },
-    builds: recentBuilds.map((b) => ({ ...b, likeCount: counts.likes.get(b.id) ?? 0, commentCount: counts.comments.get(b.id) ?? 0, likedByMe: liked.has(b.id) })),
-    threads: recentThreads.map((t) => ({ ...t, body: t.body.slice(0, 160), replyCount: replies.get(t.id) ?? 0 })),
-    topBuildId: topLike[0]?.id ?? null,
-  })
-})

@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { byId } from '@/data/ingredients'
+import { byId } from '../../../shared/ingredients'
 import { checkCompatibility } from '@/lib/compat'
 import { computeTotals, fmtMinutes, fmtPrice } from '@/lib/totals'
 import { useBowlStore } from '@/store/bowl'

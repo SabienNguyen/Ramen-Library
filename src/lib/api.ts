@@ -1,79 +1,34 @@
-import type { Bowl } from '../../shared/bowl'
+import { treaty } from '@elysiajs/eden'
+import type { App } from '../../server/app'
 
-export type Author = { id: string; name: string; image: string | null }
-export type BuildItem = {
-  id: string
-  userId: string
-  name: string
-  description: string
-  bowl: Bowl
-  imageUrl: string | null
-  thumbUrl: string | null
-  templateId: string | null
-  createdAt: string
-  updatedAt: string
-  author: Author
-  likeCount: number
-  commentCount: number
-  likedByMe: boolean
-}
-export type Comment = { id: string; buildId: string; userId: string; body: string; createdAt: string; author: Author }
-export type BuildDetail = BuildItem & { comments: Comment[]; author: Author & { bio: string | null } }
-export type ThreadItem = {
-  id: string
-  userId: string
-  category: string
-  title: string
-  body: string
-  createdAt: string
-  lastActivityAt: string
-  author: Author
-  replyCount: number
-}
-export type Post = { id: string; threadId: string; userId: string; body: string; createdAt: string; author: Author }
-export type ThreadDetail = Omit<ThreadItem, 'replyCount'> & { posts: Post[] }
-export type Profile = { id: string; name: string; image: string | null; bio: string | null; createdAt: string }
-export type HomeData = {
-  stats: { builds: number; users: number; threads: number }
-  builds: BuildItem[]
-  threads: ThreadItem[]
-  topBuildId: string | null
-}
+export const client = treaty<App>(window.location.origin)
 
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
     super(message)
     this.status = status
+    this.name = 'ApiError'
   }
 }
 
-export async function api<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
-  const { json, ...rest } = init ?? {}
-  const res = await fetch(`/api${path}`, {
-    credentials: 'same-origin',
-    ...rest,
-    headers: { ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(rest.headers ?? {}) },
-    body: json !== undefined ? JSON.stringify(json) : rest.body,
-  })
-  if (!res.ok) {
-    let message = res.statusText
-    try {
-      const data = (await res.json()) as { error?: string; message?: string }
-      message = data.error ?? data.message ?? message
-    } catch {
-      /* not json */
-    }
-    throw new ApiError(res.status, message)
+type EdenResponse<T> = { data: T | null; error: { status: unknown; value: unknown } | null }
+
+/** Unwrap an Eden response: return data or throw ApiError(status, error.value.error). */
+export async function unwrap<T>(p: Promise<EdenResponse<T>>): Promise<T> {
+  const { data, error } = await p
+  if (error) {
+    const value = error.value as { error?: string; message?: string } | undefined
+    const message = value?.error ?? value?.message ?? 'Request failed.'
+    const status = typeof error.status === 'number' ? error.status : 500
+    throw new ApiError(status, message)
   }
-  return res.json() as Promise<T>
+  return data as T
 }
 
 /** Upload a photo; returns the stored URLs. */
 export async function uploadPhoto(file: File): Promise<{ imageUrl: string; thumbUrl: string }> {
-  const form = new FormData()
-  form.append('file', file)
-  return api('/uploads', { method: 'POST', body: form })
+  return unwrap(client.api.uploads.post({ file }))
 }
 
 export function timeAgo(iso: string | Date) {
@@ -88,3 +43,23 @@ export function timeAgo(iso: string | Date) {
   if (d < 30) return `${d}d ago`
   return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d > 365 ? 'numeric' : undefined })
 }
+
+// --- Types, inferred from the treaty client where possible ---------------
+
+type Data<T> = Awaited<T> extends { data: infer D } ? NonNullable<D> : never
+
+export type HomeData = Data<ReturnType<typeof client.api.home.get>>
+export type BuildItem = HomeData['builds'][number]
+export type ThreadItem = HomeData['threads'][number]
+export type Author = BuildItem['author']
+
+type BuildDetailResponse = Data<ReturnType<ReturnType<typeof client.api.builds>['get']>>
+export type BuildDetail = BuildDetailResponse['build']
+export type Comment = BuildDetail['comments'][number]
+
+type ThreadDetailResponse = Data<ReturnType<ReturnType<typeof client.api.forum.threads>['get']>>
+export type ThreadDetail = ThreadDetailResponse['thread']
+export type Post = ThreadDetail['posts'][number]
+
+type UserResponse = Data<ReturnType<ReturnType<typeof client.api.users>['get']>>
+export type Profile = UserResponse['profile']

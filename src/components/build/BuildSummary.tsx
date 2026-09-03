@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { AlertTriangle, BookmarkPlus, Check, CircleAlert, Eraser, Flame, Info, Link2, Shuffle, Upload } from 'lucide-react'
-import { api, uploadPhoto } from '@/lib/api'
+import { client, unwrap, uploadPhoto } from '@/lib/api'
 import { CoverPicker, defaultCover, type CoverChoice } from './CoverPicker'
 import { authClient } from '@/lib/auth-client'
 import type { Issue } from '@/lib/compat'
@@ -72,10 +72,16 @@ export function BuildSummary({ totals, issues, className }: { totals: Totals; is
       let imageUrl = cover.imageUrl
       let thumbUrl = cover.thumbUrl
       if (cover.file) ({ imageUrl, thumbUrl } = await uploadPhoto(cover.file))
-      const { id } = await api<{ id: string }>('/builds', {
-        method: 'POST',
-        json: { name: pubName || suggested, description: pubDesc, bowl, imageUrl, thumbUrl, templateId: imageUrl ? null : cover.templateId },
-      })
+      const { id } = await unwrap(
+        client.api.builds.post({
+          name: pubName || suggested,
+          description: pubDesc,
+          bowl,
+          imageUrl,
+          thumbUrl,
+          templateId: imageUrl ? null : cover.templateId,
+        }),
+      )
       setPubOpen(false)
       navigate(`/builds/${id}`)
     } catch (err) {

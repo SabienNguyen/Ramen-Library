@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useRevalidator } from 'react-router'
-import { api, timeAgo, type Author } from '@/lib/api'
+import { timeAgo, type Author } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
@@ -47,16 +47,16 @@ export function PostRow({ author, createdAt, children, tag, onDelete, index }: {
  */
 export function Discussion({
   items,
-  postTo,
-  deletePath,
+  onPost,
+  onDelete,
   placeholder,
   next,
   noun = 'comment',
   startIndex = 1,
 }: {
   items: Message[]
-  postTo: string
-  deletePath: (id: string) => string
+  onPost: (body: string) => Promise<unknown>
+  onDelete: (id: string) => Promise<unknown>
   placeholder: string
   next: string
   noun?: string
@@ -74,7 +74,7 @@ export function Discussion({
     setBusy(true)
     setError(null)
     try {
-      await api(postTo, { method: 'POST', json: { body } })
+      await onPost(body)
       setBody('')
       revalidator.revalidate()
     } catch (err) {
@@ -86,7 +86,7 @@ export function Discussion({
 
   async function remove(id: string) {
     if (!confirm(`Delete this ${noun}?`)) return
-    await api(deletePath(id), { method: 'DELETE' })
+    await onDelete(id)
     revalidator.revalidate()
   }
 

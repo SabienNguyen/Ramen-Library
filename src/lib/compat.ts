@@ -1,4 +1,4 @@
-import { byId, slotMeta, type Slot } from '@/data/ingredients'
+import { byId, slotMeta, type Slot } from '../../shared/ingredients'
 import type { Bowl } from '@/store/bowl'
 import { computeTotals } from './totals'
 

@@ -1,4 +1,4 @@
-import type { AromaOil, Broth, Noodle, PartBase, Slot, Tare, Topping } from '@/data/ingredients'
+import type { AromaOil, Broth, Noodle, PartBase, Slot, Tare, Topping } from '../../../shared/ingredients'
 import { cn } from '@/lib/utils'
 import { ToppingGlyph } from '@/components/bowl/ToppingGlyph'
 

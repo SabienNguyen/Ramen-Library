@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, RefreshCw, X } from 'lucide-react'
-import { byId, slotMeta, type PartBase, type Slot } from '@/data/ingredients'
+import { byId, slotMeta, type PartBase, type Slot } from '../../../shared/ingredients'
 import type { Issue } from '@/lib/compat'
 import { fmtMinutes, fmtPrice } from '@/lib/totals'
 import { cn } from '@/lib/utils'
