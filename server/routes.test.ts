@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,11 +10,22 @@ process.env.DATABASE_URL = `file:${join(tmpDbDir, 't.db')}`
 process.env.UPLOAD_DIR = uploadDir
 process.env.BETTER_AUTH_SECRET = 'test-secret-at-least-32-characters-long'
 process.env.BETTER_AUTH_URL = 'http://localhost:5173'
+// app.handle() requests carry no real socket, so `clientIp` falls back to 'unknown'
+// unless a test sends X-Forwarded-For — set this so those tests can pick distinct IPs.
+process.env.TRUST_PROXY = '1'
 
 const { migrateToLatest } = await import('./db/migrate')
 const { app } = await import('./app')
+const { limiters } = await import('./ratelimit')
 
 await migrateToLatest()
+
+// The rate limiters are process-wide singletons (see server/ratelimit.ts's `limiters`
+// registry), so reset them before every test — otherwise the many API calls the flow
+// tests below make would eventually trip the global `api-global` tier.
+beforeEach(() => {
+  for (const limiter of Object.values(limiters)) limiter.reset()
+})
 
 const bowl = {
   brothId: 'tonkotsu',
@@ -360,5 +371,77 @@ describe('server routes', () => {
     const res = await app.handle(req(`/api/builds/${buildId}`, { method: 'DELETE', cookie }))
     expect(res.status).toBe(200)
     expect(await json(res)).toEqual({ ok: true })
+  })
+})
+
+describe('rate limiting', () => {
+  function reqFrom(path: string, ip: string, init: RequestInit & { cookie?: string } = {}): Request {
+    const headers = new Headers(init.headers)
+    headers.set('x-forwarded-for', ip)
+    if (init.cookie) headers.set('cookie', init.cookie)
+    return new Request(`http://localhost${path}`, { ...init, headers })
+  }
+
+  test('6 rapid sign-ups from the same IP: the 6th is 429 with {error} and Retry-After', async () => {
+    const ip = '198.51.100.11'
+    let last!: Response
+    for (let i = 0; i < 6; i++) {
+      last = await app.handle(
+        reqFrom('/api/auth/sign-up/email', ip, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: `flood-signup-${i}@example.com`, password: 'password123', name: 'Flood' }),
+        }),
+      )
+    }
+    expect(last.status).toBe(429)
+    expect(last.headers.get('retry-after')).toBeTruthy()
+    const body = await json(last)
+    expect(typeof body.error).toBe('string')
+  })
+
+  test('21 uploads by the same user: the 21st is 429', async () => {
+    const ip = '198.51.100.12'
+    const signed = await signUp('flood-uploads@example.com', 'Flood Uploads')
+    const png = await sharp({
+      create: { width: 10, height: 10, channels: 4, background: { r: 1, g: 2, b: 3, alpha: 1 } },
+    })
+      .png()
+      .toBuffer()
+
+    let last!: Response
+    for (let i = 0; i < 21; i++) {
+      const form = new FormData()
+      form.set('file', new File([png], `photo-${i}.png`, { type: 'image/png' }))
+      const headers = new Headers()
+      headers.set('cookie', signed.cookie)
+      headers.set('x-forwarded-for', ip)
+      last = await app.handle(new Request('http://localhost/api/uploads', { method: 'POST', headers, body: form }))
+    }
+    expect(last.status).toBe(429)
+    expect(last.headers.get('retry-after')).toBeTruthy()
+    const body = await json(last)
+    expect(typeof body.error).toBe('string')
+  })
+
+  test('301 GET /api/home from the same IP: the 301st is 429', async () => {
+    const ip = '198.51.100.13'
+    let last!: Response
+    for (let i = 0; i < 301; i++) {
+      last = await app.handle(reqFrom('/api/home', ip))
+    }
+    expect(last.status).toBe(429)
+    expect(last.headers.get('retry-after')).toBeTruthy()
+    const body = await json(last)
+    expect(typeof body.error).toBe('string')
+  })
+
+  test('GET /uploads/... and other non-API paths are never rate limited', async () => {
+    const ip = '198.51.100.14'
+    let last!: Response
+    for (let i = 0; i < 320; i++) {
+      last = await app.handle(reqFrom('/uploads/does-not-exist.webp', ip))
+      expect(last.status).not.toBe(429)
+    }
   })
 })

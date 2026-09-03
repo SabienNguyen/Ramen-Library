@@ -9,6 +9,8 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
+      # Caddy always sets X-Forwarded-For, so the app can trust it for rate-limiting.
+      TRUST_PROXY: "1"
     volumes:
       # Fallback local-disk upload storage when S3_ENDPOINT is unset.
       # Also holds a file: DATABASE_URL if you choose not to run sqld.

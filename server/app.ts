@@ -3,14 +3,30 @@ import { Elysia } from 'elysia'
 import { staticPlugin } from '@elysiajs/static'
 import { auth } from './auth'
 import { ApiError } from './errors'
+import { clientIp, createLimiter, limiters } from './ratelimit'
 import { session } from './session'
 import { api } from './routes'
 import { s3Configured, LOCAL_UPLOAD_DIR } from './storage'
+
+// `api-global` covers every request under /api/* (including the auth wildcard below).
+// The `auth-*` tiers are picked by pathname on that same wildcard route, since Elysia
+// treats it as a single `.all` handler rather than separate routes per auth action.
+limiters['api-global'] = createLimiter({ name: 'api-global', windowMs: 60 * 1000, max: 300 })
+limiters['auth-signup'] = createLimiter({ name: 'auth-signup', windowMs: 60 * 60 * 1000, max: 5 })
+limiters['auth-signin'] = createLimiter({ name: 'auth-signin', windowMs: 15 * 60 * 1000, max: 10 })
+limiters['auth-other'] = createLimiter({ name: 'auth-other', windowMs: 60 * 1000, max: 60 })
+
+function authLimiterFor(pathname: string) {
+  if (pathname === '/api/auth/sign-up/email') return limiters['auth-signup']
+  if (pathname === '/api/auth/sign-in/email') return limiters['auth-signin']
+  return limiters['auth-other']
+}
 
 export const app = new Elysia()
   .onError(({ code, error, set }) => {
     if (error instanceof ApiError) {
       set.status = error.status
+      if (error.headers) for (const [key, value] of Object.entries(error.headers)) set.headers[key] = value
       return { error: error.message }
     }
     if (code === 'VALIDATION') {
@@ -27,7 +43,37 @@ export const app = new Elysia()
     set.status = 500
     return { error: 'Something went wrong.' }
   })
+  // Global per-IP cap on every /api/* request (never /uploads/* or other static files).
+  // `onRequest` fires before routing, ahead of any `.use()`-mounted plugin's own hooks, so
+  // this single hook on the root instance covers `api` and the `/api/auth/*` wildcard alike.
+  .onRequest(({ request, server }) => {
+    if (process.env.RATE_LIMIT_DISABLED === '1') return
+    const { pathname } = new URL(request.url)
+    if (!pathname.startsWith('/api/')) return
+    const ip = clientIp(request, server)
+    const result = limiters['api-global'].hit(`api-global:ip:${ip}`)
+    if (!result.allowed) {
+      throw new ApiError(429, `Too many requests. Try again in ${result.retryAfterSec}s.`, {
+        'Retry-After': String(result.retryAfterSec),
+        'X-RateLimit-Remaining': String(result.remaining),
+      })
+    }
+  })
   .use(session)
+  .onBeforeHandle(({ request, server }) => {
+    if (process.env.RATE_LIMIT_DISABLED === '1') return
+    const { pathname } = new URL(request.url)
+    if (!pathname.startsWith('/api/auth/')) return
+    const ip = clientIp(request, server)
+    const limiter = authLimiterFor(pathname)
+    const result = limiter.hit(`${pathname}:ip:${ip}`)
+    if (!result.allowed) {
+      throw new ApiError(429, `Too many requests. Try again in ${result.retryAfterSec}s.`, {
+        'Retry-After': String(result.retryAfterSec),
+        'X-RateLimit-Remaining': String(result.remaining),
+      })
+    }
+  })
   .all('/api/auth/*', ({ request }) => auth.handler(request))
   .use(api)
 
