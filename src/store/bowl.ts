@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { broths, noodles, oils, tares, toppings, type Slot } from '../../shared/ingredients'
 
-import { MAX_TOPPINGS, type Bowl, type PlacedTopping } from '../../shared/bowl'
+import { AMOUNT_KEY, MAX_TOPPINGS, type Bowl, type PlacedTopping } from '../../shared/bowl'
 
 export { MAX_TOPPINGS }
 export type { Bowl, PlacedTopping }
@@ -19,6 +19,8 @@ type BowlState = {
   bowl: Bowl
   library: SavedBowl[]
   setPart: (slot: SingleSlot, id: string | null) => void
+  setAmount: (slot: SingleSlot, value: number | undefined) => void
+  setToppingQty: (key: string, value: number | undefined) => void
   addTopping: (id: string) => void
   removeTopping: (key: string) => void
   moveTopping: (key: string, x: number, y: number) => void
@@ -56,7 +58,30 @@ export const useBowlStore = create<BowlState>()(
     (set, get) => ({
       bowl: emptyBowl,
       library: [],
-      setPart: (slot, id) => set((s) => ({ bowl: { ...s.bowl, [slotKey[slot]]: id } })),
+      setPart: (slot, id) =>
+        set((s) => {
+          const next: Bowl = { ...s.bowl, [slotKey[slot]]: id }
+          delete next[AMOUNT_KEY[slot]]
+          return { bowl: next }
+        }),
+      setAmount: (slot, value) =>
+        set((s) => {
+          const next: Bowl = { ...s.bowl }
+          if (value === undefined) delete next[AMOUNT_KEY[slot]]
+          else next[AMOUNT_KEY[slot]] = value
+          return { bowl: next }
+        }),
+      setToppingQty: (key, value) =>
+        set((s) => ({
+          bowl: {
+            ...s.bowl,
+            toppings: s.bowl.toppings.map((t) => {
+              if (t.key !== key) return t
+              const { qty: _drop, ...rest } = t
+              return value === undefined ? rest : { ...rest, qty: value }
+            }),
+          },
+        })),
       addTopping: (toppingId) =>
         set((s) => {
           if (s.bowl.toppings.length >= MAX_TOPPINGS) return s
@@ -92,7 +117,8 @@ export const useBowlStore = create<BowlState>()(
       load: (id) => {
         const found = get().library.find((b) => b.id === id)
         if (!found) return
-        set({ bowl: { brothId: found.brothId, tareId: found.tareId, noodleId: found.noodleId, oilId: found.oilId, toppings: found.toppings } })
+        const { id: _id, name: _name, savedAt: _savedAt, ...bowl } = found
+        set({ bowl })
       },
       remove: (id) => set((s) => ({ library: s.library.filter((b) => b.id !== id) })),
     }),
