@@ -194,6 +194,23 @@ This publishes `http://localhost` (the app, via `deploy/Caddyfile.local`) and `h
 
 Nothing is stopped before backing up — `sqld` and Garage write through a WAL, so the backup is crash-consistent (equivalent to a hard power-off) but not transaction-consistent. That's an acceptable tradeoff at this scale; restic dedupes, so nightly runs stay cheap.
 
+### Rate limits
+
+In-memory, fixed-window rate limits (`server/ratelimit.ts`) protect the API from bots without adding a dependency. Every limit is keyed per-IP, except uploads and other writes, which key by signed-in user (falling back to IP when signed out):
+
+| Tier | Limit | Applies to |
+| --- | --- | --- |
+| `api-global` | 300 / 60s per IP | Every `/api/*` request |
+| `auth-signup` | 5 / hour per IP | `POST /api/auth/sign-up/email` |
+| `auth-signin` | 10 / 15min per IP | `POST /api/auth/sign-in/email` |
+| `auth-other` | 60 / 60s per IP | The rest of `/api/auth/*` |
+| `uploads` | 20 / hour per user (or IP) | `POST /api/uploads` |
+| `writes` | 60 / 15min per user (or IP) | Other write routes (builds, comments, likes, threads, posts, profile updates) |
+
+A limited request gets `429` with `{ "error": "..." }` and a `Retry-After` header, same shape as any other API error.
+
+Env vars: `TRUST_PROXY=1` makes the app trust the first `X-Forwarded-For` entry as the client IP — set it only behind a reverse proxy that sets that header itself (docker-compose.yml's `app` service already sets it, since Caddy fronts it); leaving it unset in a directly-exposed deployment lets clients spoof their rate-limit key. `RATE_LIMIT_DISABLED=1` turns every limiter into a no-op — useful for load testing, never set it in production.
+
 ## Adding a part
 
 Append to the right array in `src/data/ingredients.ts` with its specs. A new topping also needs a glyph in `src/components/bowl/ToppingGlyph.tsx` (60×60 viewBox). Add a rule to `src/lib/compat.ts` if the part has opinions about what it pairs with.

@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { sql } from 'kysely'
 import { db } from './db/client'
 import { ApiError } from './errors'
+import { rateLimit } from './ratelimit'
 import { session } from './session'
 import { saveUpload } from './uploads'
 import { isOwnUploadUrl } from './storage'
@@ -206,6 +207,7 @@ export const api = new Elysia({ prefix: '/api' })
 
   .guard({ transform: requireAuth }, (app) =>
     app
+      .use(rateLimit({ name: 'writes', windowMs: 15 * 60 * 1000, max: 60, keyFor: 'user-or-ip' }))
       .patch(
         '/me',
         async ({ user, body }) => {
@@ -326,18 +328,6 @@ export const api = new Elysia({ prefix: '/api' })
         return { ok: true }
       })
 
-      /* -------------------------------- uploads ------------------------------- */
-
-      .post(
-        '/uploads',
-        async ({ body, set }) => {
-          const result = await saveUpload(body.file)
-          set.status = 201
-          return result
-        },
-        { body: t.Object({ file: t.File() }) },
-      )
-
       /* --------------------------------- forum -------------------------------- */
 
       .post(
@@ -395,6 +385,24 @@ export const api = new Elysia({ prefix: '/api' })
         await db.deleteFrom('forum_posts').where('id', '=', params.id).execute()
         return { ok: true }
       }),
+  )
+
+  /* -------------------------------- uploads -------------------------------- */
+  // Its own guard block (rather than living in the block above) so it gets the
+  // `uploads` rate-limit tier instead of `writes`.
+
+  .guard({ transform: requireAuth }, (app) =>
+    app
+      .use(rateLimit({ name: 'uploads', windowMs: 60 * 60 * 1000, max: 20, keyFor: 'user-or-ip' }))
+      .post(
+        '/uploads',
+        async ({ body, set }) => {
+          const result = await saveUpload(body.file)
+          set.status = 201
+          return result
+        },
+        { body: t.Object({ file: t.File() }) },
+      ),
   )
 
   /* -------------------------------- builds (reads) ------------------------- */
