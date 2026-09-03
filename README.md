@@ -203,3 +203,7 @@ Append to the matching array in `shared/ingredients.ts` with `price`, `minutes`,
 - Notifications
 - Cleanup of uploaded images no build references
 - Prices by vendor or region
+
+## License
+
+MIT. See [LICENSE](LICENSE).
