@@ -4,9 +4,23 @@
 
 Pick a broth, a tare, noodles, an aroma oil and toppings from a parts catalogue with real specs (price, prep time, calories, sodium, diet tags). A compatibility checker flags builds that don't work — thin noodles under miso, butter on a clear broth, more toppings than the broth can carry. Totals update live and the bowl renders as you go.
 
-Then publish it. Accounts, a community gallery with likes and comments, a forum, user profiles — the whole site, backed by a small API and a SQLite file.
+Then publish it. Accounts, a community gallery with likes and comments, a forum, user profiles — the whole site, backed by a small API and a libSQL database, all self-hosted.
 
 Every published build gets a cover: a photo you upload (resized and re-encoded to WebP on the server), or one of five illustrated templates that tint themselves to your broth for people who haven't shot the bowl yet.
+
+## Screenshots
+
+| Home | Builder |
+| --- | --- |
+| ![Home page: latest builds with illustrated covers](docs/screenshots/home.png) | ![Builder: parts table, live bowl render, totals and compatibility notes](docs/screenshots/builder.png) |
+
+| Builds gallery | Build detail |
+| --- | --- |
+| ![Builds gallery sorted by newest or most liked](docs/screenshots/builds.png) | ![Build detail: cover, parts breakdown, likes and comments](docs/screenshots/build.png) |
+
+| Forum | Thread |
+| --- | --- |
+| ![Forum index with categories and reply counts](docs/screenshots/forum.png) | ![Thread with original post and replies](docs/screenshots/thread.png) |
 
 ## Design
 
@@ -213,13 +227,13 @@ Env vars: `TRUST_PROXY=1` makes the app trust the first `X-Forwarded-For` entry 
 
 ## Adding a part
 
-Append to the right array in `src/data/ingredients.ts` with its specs. A new topping also needs a glyph in `src/components/bowl/ToppingGlyph.tsx` (60×60 viewBox). Add a rule to `src/lib/compat.ts` if the part has opinions about what it pairs with.
+Append to the right array in `shared/ingredients.ts` with its specs. A new topping also needs a glyph in `src/components/bowl/ToppingGlyph.tsx` (60×60 viewBox). Add a rule to `src/lib/compat.ts` if the part has opinions about what it pairs with.
 
 ## Roadmap ideas
 
 - Social sign-in (Google / GitHub) — Better Auth makes this a config change
-- Email verification and password reset (needs a mail provider)
-- Moderation: report, admin role, rate limits
+- Password reset (verification email already sends once `EMAIL_PROVIDER_KEY` is set; enforce it with `requireEmailVerification`)
+- Moderation: report, admin role (rate limits are in place, see Deploy)
 - Notifications (someone commented on your build)
 - Price by vendor / region and a "where to buy" column
 - Regional presets as starter builds; export as PNG or shopping list
