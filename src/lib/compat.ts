@@ -78,7 +78,7 @@ export function checkCompatibility(bowl: Bowl): Issue[] {
 
   // Diet clash
   if (broth?.id === 'kombu') {
-    const animal = [...(tare ? [tare] : []), ...(oil ? [oil] : []), ...tops].filter((p) => !p.tags.includes('vegan'))
+    const animal = [...(tare ? [tare] : []), ...(oil ? [oil] : []), ...tops].filter((p) => p.diet !== 'plant')
     if (animal.length) {
       const names = [...new Set(animal.map((p) => p.name))].join(', ')
       issues.push({ level: 'note', message: `Kombu Dashi is plant-based but ${names} ${animal.length > 1 ? 'aren’t' : 'isn’t'}. The build is no longer vegan.`, slots: ['broth', 'topping'] })
